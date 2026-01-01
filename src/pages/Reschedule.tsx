@@ -102,7 +102,7 @@ export default function Reschedule() {
       const searchUserBookings = async () => {
         setLoadingBookings(true);
         try {
-          const { data, error } = await supabase.functions.invoke('query_bookings', {
+          const { data, error } = await supabase.functions.invoke('query-bookings', {
             body: { 
               contact: oldContact,
               senha
@@ -178,7 +178,7 @@ export default function Reschedule() {
       const {
         data,
         error
-      } = await supabase.functions.invoke("get_available_slots", {
+      } = await supabase.functions.invoke("get-available-slots", {
         body: {
           date: dStr,
           professional: professional || undefined
@@ -247,7 +247,7 @@ export default function Reschedule() {
       const {
         data,
         error
-      } = await supabase.functions.invoke("reschedule_booking", {
+      } = await supabase.functions.invoke("reschedule-booking", {
         body: {
           oldName: selectedBooking.NOME,
           oldContact: selectedBooking.CONTATO,

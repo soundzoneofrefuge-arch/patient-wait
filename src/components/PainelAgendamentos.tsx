@@ -76,7 +76,7 @@ export const PainelAgendamentos = () => {
   const handleStatusFinal = async (agendamentoId: string, statusFinal: string) => {
     setIsSubmitting(prev => new Set(prev).add(agendamentoId));
     try {
-      const { data, error } = await supabase.functions.invoke('update_finalizacao', {
+      const { data, error } = await supabase.functions.invoke('update-finalizacao', {
         body: {
           id: agendamentoId,
           statusFinal

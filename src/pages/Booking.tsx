@@ -138,7 +138,7 @@ export default function Booking() {
       professional
     });
     try {
-      const { data, error } = await supabase.functions.invoke("get_available_slots", {
+      const { data, error } = await supabase.functions.invoke("get-available-slots", {
         body: {
           date: dStr,
           professional: professional || undefined
@@ -235,7 +235,7 @@ export default function Booking() {
         professional,
         service
       });
-      const { data, error } = await supabase.functions.invoke("book_slot", {
+      const { data, error } = await supabase.functions.invoke("book-slot", {
         body: {
           date: selectedDateStr,
           time: selectedSlot,

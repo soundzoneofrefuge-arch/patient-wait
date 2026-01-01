@@ -42,7 +42,7 @@ export default function Cancel() {
       const searchUserBookings = async () => {
         setLoadingBookings(true);
         try {
-          const { data, error } = await supabase.functions.invoke('query_bookings', {
+          const { data, error } = await supabase.functions.invoke('query-bookings', {
             body: { 
               contact,
               senha
@@ -80,7 +80,7 @@ export default function Cancel() {
       const {
         data,
         error
-      } = await supabase.functions.invoke("cancel_booking", {
+      } = await supabase.functions.invoke("cancel-booking", {
         body: {
           name: selectedBooking.NOME,
           contact: selectedBooking.CONTATO,
