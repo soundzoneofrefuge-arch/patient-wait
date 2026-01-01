@@ -10,23 +10,49 @@ export const corsHeaders = {
 
 // === DATETIME ===
 export function getBrazilDateTime(): Date {
-  const now = new Date();
-  const brazilTimeStr = now.toLocaleString("en-US", {
-    timeZone: "America/Sao_Paulo"
-  });
-  return new Date(brazilTimeStr);
+  // Representação consistente do “agora” no fuso do Brasil (America/Sao_Paulo)
+  // Observação: Date em JS não carrega timezone; aqui usamos as partes formatadas.
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value;
+
+  const y = Number(get("year"));
+  const m = Number(get("month"));
+  const d = Number(get("day"));
+  const hh = Number(get("hour"));
+  const mm = Number(get("minute"));
+  const ss = Number(get("second"));
+
+  return new Date(Date.UTC(y, m - 1, d, hh, mm, ss));
 }
 
 export function getBrazilDateString(): string {
-  const brazilDate = getBrazilDateTime();
-  return brazilDate.toISOString().split('T')[0];
+  // YYYY-MM-DD no fuso do Brasil
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 export function getBrazilTimeString(): string {
-  const brazilDate = getBrazilDateTime();
-  const hours = brazilDate.getHours().toString().padStart(2, '0');
-  const minutes = brazilDate.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
+  // HH:mm no fuso do Brasil
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date());
 }
 
 // === PASSWORD ===

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
@@ -255,7 +256,7 @@ export default function MovimentacaoDia() {
                             "--dy": `${spot.dy}px`,
                             "--dur": `${spot.dur}s`,
                             animationDelay: `${spot.delay}s`,
-                          } as React.CSSProperties
+                          } as CSSProperties
                         }
                       >
                         <div className="crew-bob" style={{ animationDelay: `${spot.delay}s` }}>
