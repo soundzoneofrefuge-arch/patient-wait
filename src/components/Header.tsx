@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { LogOut, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,24 +21,30 @@ export const Header = () => {
   };
 
   return (
-    <header className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg border-b border-primary/20">
-      <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
+    <header className="relative overflow-hidden bg-card border-b border-border/50">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 grid-pattern opacity-30"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/5"></div>
+      
+      <div className="container relative mx-auto px-4 md:px-6 py-6 md:py-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center space-x-3 md:space-x-4">
-            <div className="bg-white/10 p-2 md:p-3 rounded-lg backdrop-blur-sm">
-              <svg className="w-6 h-6 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
+            <div className="bg-primary/20 p-3 md:p-4 rounded-xl border border-primary/30 shadow-glow-sm">
+              <BarChart3 className="w-6 h-6 md:w-8 md:h-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-4xl font-bold text-white drop-shadow-sm">Dashboard ASPERUS</h1>
-              <p className="text-white/90 mt-1 md:mt-2 text-sm md:text-lg font-medium">Painel de controle para agendamentos</p>
+              <h1 className="text-2xl md:text-4xl font-bold text-foreground tracking-tight">
+                Dashboard <span className="text-gradient">ASPERUS</span>
+              </h1>
+              <p className="text-muted-foreground mt-1 md:mt-2 text-sm md:text-base">
+                Painel de controle para agendamentos
+              </p>
             </div>
           </div>
           <Button
             variant="outline"
             onClick={handleLogout}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white self-end md:self-auto"
+            className="border-border/50 hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive self-end md:self-auto"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Sair
