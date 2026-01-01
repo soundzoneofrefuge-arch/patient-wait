@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import authBackground from "@/assets/background.png";
+import authBackground from "@/assets/auth-background.jpg";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";

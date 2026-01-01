@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Calendar, Clock, User, Briefcase, Phone, MapPin, FileText, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import authBackground from "@/assets/background.png";
+import authBackground from "@/assets/auth-background.jpg";
 interface BookingData {
   date: string;
   time: string;

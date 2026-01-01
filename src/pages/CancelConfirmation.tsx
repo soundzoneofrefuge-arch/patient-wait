@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Calendar, Clock, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import authBackground from "@/assets/background.png";
+import authBackground from "@/assets/auth-background.jpg";
 export default function CancelConfirmation() {
   const navigate = useNavigate();
   const location = useLocation();

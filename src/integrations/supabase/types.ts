@@ -10,166 +10,11 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
-      agendamentos_robustos: {
-        Row: {
-          CONTATO: string | null
-          created_at: string | null
-          DATA: string
-          finalização: string | null
-          HORA: string
-          id: string
-          NOME: string | null
-          PROFISSIONAL: string | null
-          senha: string | null
-          servico: string | null
-          STATUS:
-            | Database["public"]["Enums"]["status_agendamento_robusto"]
-            | null
-        }
-        Insert: {
-          CONTATO?: string | null
-          created_at?: string | null
-          DATA: string
-          finalização?: string | null
-          HORA: string
-          id?: string
-          NOME?: string | null
-          PROFISSIONAL?: string | null
-          senha?: string | null
-          servico?: string | null
-          STATUS?:
-            | Database["public"]["Enums"]["status_agendamento_robusto"]
-            | null
-        }
-        Update: {
-          CONTATO?: string | null
-          created_at?: string | null
-          DATA?: string
-          finalização?: string | null
-          HORA?: string
-          id?: string
-          NOME?: string | null
-          PROFISSIONAL?: string | null
-          senha?: string | null
-          servico?: string | null
-          STATUS?:
-            | Database["public"]["Enums"]["status_agendamento_robusto"]
-            | null
-        }
-        Relationships: []
-      }
-      bd_ativo: {
-        Row: {
-          created_at: string
-          id: number
-          num: number | null
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          num?: number | null
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          num?: number | null
-        }
-        Relationships: []
-      }
-      cadastro: {
-        Row: {
-          contato: string
-          created_at: string
-          data_nascimento: string
-          id: number
-          nome: string
-          serviços_preferidos: string
-          user_id: string | null
-        }
-        Insert: {
-          contato: string
-          created_at?: string
-          data_nascimento: string
-          id?: number
-          nome: string
-          serviços_preferidos: string
-          user_id?: string | null
-        }
-        Update: {
-          contato?: string
-          created_at?: string
-          data_nascimento?: string
-          id?: number
-          nome?: string
-          serviços_preferidos?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      feriados: {
-        Row: {
-          data: string
-          descricao: string
-        }
-        Insert: {
-          data: string
-          descricao: string
-        }
-        Update: {
-          data?: string
-          descricao?: string
-        }
-        Relationships: []
-      }
-      info_loja: {
-        Row: {
-          address: string | null
-          auth_user: string | null
-          closing_time: string
-          escolha_serviços: string | null
-          id: string
-          instructions: string | null
-          maps_url: string | null
-          name: string
-          nome_profissionais: string | null
-          opening_time: string
-          phone: string | null
-          slot_interval_minutes: number
-        }
-        Insert: {
-          address?: string | null
-          auth_user?: string | null
-          closing_time?: string
-          escolha_serviços?: string | null
-          id?: string
-          instructions?: string | null
-          maps_url?: string | null
-          name: string
-          nome_profissionais?: string | null
-          opening_time?: string
-          phone?: string | null
-          slot_interval_minutes?: number
-        }
-        Update: {
-          address?: string | null
-          auth_user?: string | null
-          closing_time?: string
-          escolha_serviços?: string | null
-          id?: string
-          instructions?: string | null
-          maps_url?: string | null
-          name?: string
-          nome_profissionais?: string | null
-          opening_time?: string
-          phone?: string | null
-          slot_interval_minutes?: number
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
@@ -178,7 +23,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      status_agendamento_robusto: "AGENDADO" | "REAGENDADO" | "CANCELADO"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -305,8 +150,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      status_agendamento_robusto: ["AGENDADO", "REAGENDADO", "CANCELADO"],
-    },
+    Enums: {},
   },
 } as const
