@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Search, Calendar, Clock, User, Briefcase } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -25,7 +25,6 @@ export default function ConsultaAgendamentos() {
   const [userBookings, setUserBookings] = useState<Agendamento[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
 
-  // Buscar agendamentos do usuário quando contato e senha são preenchidos
   useEffect(() => {
     const searchUserBookings = async () => {
       if (!contact || !senha) {
@@ -35,12 +34,8 @@ export default function ConsultaAgendamentos() {
 
       setLoadingBookings(true);
       try {
-        // Usar edge function para consulta segura
         const { data, error } = await supabase.functions.invoke('query_bookings', {
-          body: { 
-            contact,
-            senha
-          }
+          body: { contact, senha }
         });
 
         if (error) {
@@ -62,15 +57,18 @@ export default function ConsultaAgendamentos() {
   }, [contact, senha]);
 
   return (
-    <Card className="border-green-500/20 bg-card/95 backdrop-blur-sm">
-      <CardHeader>
-        <Alert className="mb-3 border-yellow-500/50 bg-yellow-500/10">
-          <AlertCircle className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-700 dark:text-yellow-500">
-            Atenção! Agendamentos passados não poderão ser consultados
+    <Card className="border-success/20 bg-card/80 backdrop-blur-sm">
+      <CardHeader className="pb-4">
+        <Alert className="mb-3 border-warning/30 bg-warning/5">
+          <AlertCircle className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-warning text-sm">
+            Agendamentos passados não poderão ser consultados
           </AlertDescription>
         </Alert>
-        <CardTitle className="text-green-600">Consultar Agendamento</CardTitle>
+        <CardTitle className="text-lg font-semibold text-success flex items-center gap-2">
+          <Search className="h-5 w-5" />
+          Consultar Agendamento
+        </CardTitle>
         <p className="text-sm text-muted-foreground">
           Digite seu contato e senha para consultar seus agendamentos
         </p>
@@ -78,71 +76,93 @@ export default function ConsultaAgendamentos() {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="consultaContact">Contato (Telefone)</Label>
+            <Label htmlFor="consultaContact" className="text-xs uppercase tracking-wider text-muted-foreground">
+              Contato (Telefone)
+            </Label>
             <Input 
               id="consultaContact" 
               value={contact} 
               onChange={e => setContact(e.target.value)} 
               placeholder="Digite um número de telefone válido" 
-              className="border-green-500/40" 
+              className="border-success/30 focus:border-success" 
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="consultaSenha">Senha (4 dígitos)</Label>
+            <Label htmlFor="consultaSenha" className="text-xs uppercase tracking-wider text-muted-foreground">
+              Senha (4 dígitos)
+            </Label>
             <Input 
               id="consultaSenha" 
               value={senha}
               onChange={e => setSenha(e.target.value)}
               placeholder="Digite os 4 dígitos" 
-              className="border-green-500/40" 
+              className="border-success/30 focus:border-success font-mono text-center tracking-widest" 
               maxLength={4}
             />
           </div>
         </div>
 
-        {/* Agendamentos encontrados */}
         {contact && senha && (
           <div className="mt-4">
             {loadingBookings ? (
-              <p className="text-sm text-muted-foreground">Buscando agendamentos...</p>
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-success/30 border-t-success rounded-full animate-spin"></div>
+                <span className="ml-3 text-sm text-muted-foreground">Buscando agendamentos...</span>
+              </div>
             ) : userBookings.length > 0 ? (
               <div className="space-y-3">
-                <h4 className="font-medium text-green-600">Seus Agendamentos:</h4>
+                <h4 className="font-semibold text-success text-sm uppercase tracking-wider">
+                  Seus Agendamentos ({userBookings.length})
+                </h4>
                 {userBookings.map((booking) => (
                   <div
                     key={booking.id}
-                    className="p-3 border border-green-500/20 rounded-lg bg-green-500/5"
+                    className="p-4 border border-success/20 rounded-xl bg-success/5 hover:bg-success/10 transition-colors"
                   >
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="font-medium text-green-600">Nome:</span>
-                        <p>{booking.NOME}</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-success" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Nome</p>
+                          <p className="font-medium text-foreground">{booking.NOME}</p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium text-green-600">Data:</span>
-                        <p>{format(new Date(booking.DATA + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}</p>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-success" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Data</p>
+                          <p className="font-medium text-foreground">
+                            {format(new Date(booking.DATA + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium text-green-600">Horário:</span>
-                        <p>{booking.HORA.slice(0, 5)}</p>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-success" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Horário</p>
+                          <p className="font-medium text-foreground font-mono">{booking.HORA.slice(0, 5)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium text-green-600">Profissional:</span>
-                        <p>{booking.PROFISSIONAL || "Não especificado"}</p>
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="h-4 w-4 text-success" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Profissional</p>
+                          <p className="font-medium text-foreground">{booking.PROFISSIONAL || "—"}</p>
+                        </div>
                       </div>
                     </div>
                     {booking.servico && (
-                      <div className="mt-2 text-sm">
-                        <span className="font-medium text-green-600">Serviço:</span>
-                        <p>{booking.servico}</p>
+                      <div className="mt-3 pt-3 border-t border-success/10">
+                        <p className="text-xs text-muted-foreground">Serviço</p>
+                        <p className="text-sm font-medium text-foreground">{booking.servico}</p>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                {contact && senha ? "Nenhum agendamento futuro encontrado ou senha incorreta." : ""}
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum agendamento futuro encontrado ou senha incorreta.
               </p>
             )}
           </div>
