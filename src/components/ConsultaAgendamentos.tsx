@@ -34,7 +34,7 @@ export default function ConsultaAgendamentos() {
 
       setLoadingBookings(true);
       try {
-        const { data, error } = await supabase.functions.invoke('query_bookings', {
+        const { data, error } = await supabase.functions.invoke('query-bookings', {
           body: { contact, senha }
         });
 
