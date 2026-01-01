@@ -313,6 +313,32 @@
   }
 }
 
+@keyframes crewWander {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(var(--dx, 12px), var(--dy, -10px));
+  }
+}
+
+@keyframes crewBob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.crew-wander {
+  animation: crewWander var(--dur, 6.5s) ease-in-out infinite;
+}
+
+.crew-bob {
+  animation: crewBob 1.8s ease-in-out infinite;
+}
+
 /* Selection */
 ::selection {
   background: hsla(25, 90%, 50%, 0.3);

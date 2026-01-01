@@ -1,126 +1,168 @@
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface AgendamentoCount {
-  hora: string;
-  count: number;
+type MovementData = {
+  date: string;
+  total: number;
+  byHour: Record<string, number>; // "09" -> 2
+};
+
+function getBrazilTimeHHMM() {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date());
+}
+
+function Crewmate({
+  toneClass,
+  size = "md",
+  variant = "standing",
+}: {
+  toneClass: string;
+  size?: "sm" | "md";
+  variant?: "standing" | "sitting";
+}) {
+  const dims = size === "sm" ? "w-5 h-6" : "w-6 h-7";
+
+  return (
+    <div
+      className={cn(
+        "relative",
+        dims,
+        "select-none",
+        toneClass,
+        variant === "sitting" ? "opacity-90" : "opacity-100"
+      )}
+      aria-hidden="true"
+    >
+      {/* Corpo */}
+      <div className="absolute inset-0 rounded-[10px] bg-current shadow-sm" />
+
+      {/* Mochila */}
+      <div className="absolute right-[-10%] top-[24%] h-[46%] w-[34%] rounded-[8px] bg-current/80" />
+
+      {/* Viseira */}
+      <div className="absolute left-[20%] top-[26%] h-[30%] w-[60%] rounded-full bg-background/80 ring-1 ring-foreground/20" />
+      <div className="absolute left-[28%] top-[30%] h-[10%] w-[20%] rounded-full bg-foreground/20" />
+
+      {/* Pernas (sutil) */}
+      <div className="absolute bottom-0 left-[18%] h-[18%] w-[26%] rounded-b-[10px] bg-current" />
+      <div className="absolute bottom-0 right-[18%] h-[18%] w-[26%] rounded-b-[10px] bg-current" />
+    </div>
+  );
 }
 
 export default function MovimentacaoDia() {
-  const [agendamentosHoje, setAgendamentosHoje] = useState<AgendamentoCount[]>([]);
-  const [totalAgendamentos, setTotalAgendamentos] = useState(0);
+  const [movement, setMovement] = useState<MovementData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [horaAtual, setHoraAtual] = useState(getBrazilTimeHHMM());
 
-  // Obter data de hoje no fuso horário do Brasil (formato YYYY-MM-DD)
-  const hoje = useMemo(() => {
-    const now = new Date();
-    const brazilFormatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Sao_Paulo',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-    return brazilFormatter.format(now); // Retorna "2026-01-01"
+  const fetchMovement = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("get-day-movement", {
+        body: {},
+      });
+
+      if (error) throw error;
+      setMovement(data as MovementData);
+    } catch (e) {
+      console.error("MovimentacaoDia fetch error", e);
+      setErrorMsg("Não foi possível carregar a movimentação do dia.");
+    } finally {
+      if (initial) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    const fetchAgendamentosHoje = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("agendamentos_robustos")
-          .select("HORA")
-          .eq("DATA", hoje)
-          .in("STATUS", ["AGENDADO", "REAGENDADO"]);
+    fetchMovement(true);
+    const id = window.setInterval(() => fetchMovement(false), 15000);
+    return () => window.clearInterval(id);
+  }, [fetchMovement]);
 
-        if (error) {
-          console.error("Erro ao buscar agendamentos:", error);
-          return;
-        }
+  useEffect(() => {
+    const id = window.setInterval(() => setHoraAtual(getBrazilTimeHHMM()), 1000 * 60);
+    return () => window.clearInterval(id);
+  }, []);
 
-        // Agrupar por hora
-        const horasMap: Record<string, number> = {};
-        data?.forEach((ag) => {
-          const hora = ag.HORA?.slice(0, 2) || "00";
-          horasMap[hora] = (horasMap[hora] || 0) + 1;
-        });
+  const totalAgendamentos = movement?.total ?? 0;
 
-        // Converter para array ordenado
-        const agrupados = Object.entries(horasMap)
-          .map(([hora, count]) => ({ hora, count }))
-          .sort((a, b) => a.hora.localeCompare(b.hora));
+  // Determinar status da barbearia (apenas volume, sem dados do cliente)
+  const statusBarbearia = useMemo(() => {
+    if (totalAgendamentos === 0)
+      return { texto: "Tranquilo", className: "badge-success" };
+    if (totalAgendamentos <= 4)
+      return { texto: "Pouco movimento", className: "badge-success" };
+    if (totalAgendamentos <= 8)
+      return { texto: "Movimento moderado", className: "badge-warning" };
+    if (totalAgendamentos <= 12)
+      return { texto: "Bastante movimento", className: "badge-warning" };
+    return { texto: "Muito movimentado", className: "badge-destructive" };
+  }, [totalAgendamentos]);
 
-        setAgendamentosHoje(agrupados);
-        setTotalAgendamentos(data?.length || 0);
-      } catch (err) {
-        console.error("Erro:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAgendamentosHoje();
-
-    // Realtime updates
-    const channel = supabase
-      .channel("movimentacao-dia")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "agendamentos_robustos"
-      }, () => fetchAgendamentosHoje())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [hoje]);
-
-  // Determinar horários de pico (os 3 maiores)
-  const horariosOrdenados = useMemo(() => {
-    return [...agendamentosHoje].sort((a, b) => b.count - a.count);
-  }, [agendamentosHoje]);
-
-  const horariosPico = useMemo(() => {
-    return horariosOrdenados.slice(0, 3).map(h => h.hora);
-  }, [horariosOrdenados]);
-
-  // Gerar horários de funcionamento (9h às 20h)
+  // Gerar horários de operação (09h às 20h)
   const horariosOperacao = useMemo(() => {
-    const horas = [];
-    for (let i = 9; i <= 20; i++) {
-      horas.push(String(i).padStart(2, "0"));
-    }
+    const horas: string[] = [];
+    for (let i = 9; i <= 20; i++) horas.push(String(i).padStart(2, "0"));
     return horas;
   }, []);
 
-  // Obter contagem máxima para normalizar barras
+  const agendamentosHoje = useMemo(() => {
+    const byHour = movement?.byHour ?? {};
+    return Object.entries(byHour)
+      .map(([hora, count]) => ({ hora, count }))
+      .sort((a, b) => a.hora.localeCompare(b.hora));
+  }, [movement]);
+
   const maxCount = useMemo(() => {
-    return Math.max(...agendamentosHoje.map(a => a.count), 1);
+    return Math.max(...agendamentosHoje.map((a) => a.count), 1);
   }, [agendamentosHoje]);
 
-  // Determinar status da barbearia
-  const statusBarbearia = useMemo(() => {
-    if (totalAgendamentos === 0) return { texto: "Tranquilo", cor: "text-green-400" };
-    if (totalAgendamentos <= 4) return { texto: "Pouco movimento", cor: "text-green-400" };
-    if (totalAgendamentos <= 8) return { texto: "Movimento moderado", cor: "text-yellow-400" };
-    if (totalAgendamentos <= 12) return { texto: "Bastante movimento", cor: "text-orange-400" };
-    return { texto: "Muito movimentado", cor: "text-red-400" };
-  }, [totalAgendamentos]);
+  const horariosPico = useMemo(() => {
+    const ordenados = [...agendamentosHoje].sort((a, b) => b.count - a.count);
+    return ordenados.slice(0, 3).map((h) => h.hora);
+  }, [agendamentosHoje]);
 
-  // Hora atual do Brasil
-  const horaAtual = useMemo(() => {
-    const now = new Date().toLocaleString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-    return now;
-  }, []);
+  // Layout da barbearia (top view): 2 cadeiras + 2 barbeiros + clientes (genéricos)
+  const clientesSentados = Math.min(totalAgendamentos, 6);
+  const clientesEmMovimento = Math.max(0, Math.min(totalAgendamentos - clientesSentados, 10));
 
-  // Cores dos clientes na ilustração
-  const coresClientes = ["#f97316", "#22c55e", "#3b82f6", "#ec4899", "#a855f7", "#eab308", "#06b6d4"];
+  const clienteTones = useMemo(
+    () => [
+      "text-warning",
+      "text-primary",
+      "text-success",
+      "text-destructive",
+      "text-foreground",
+      "text-secondary-foreground",
+      "text-accent-foreground",
+    ],
+    []
+  );
+
+  const wanderSpots = useMemo(
+    () => [
+      { top: "42%", left: "18%", dx: 14, dy: -10, dur: 6.2, delay: 0.1 },
+      { top: "58%", left: "30%", dx: -12, dy: 10, dur: 7.0, delay: 0.6 },
+      { top: "46%", left: "48%", dx: 18, dy: 8, dur: 5.6, delay: 0.2 },
+      { top: "62%", left: "58%", dx: -16, dy: -8, dur: 6.8, delay: 0.9 },
+      { top: "50%", left: "76%", dx: 12, dy: -12, dur: 7.4, delay: 0.4 },
+      { top: "36%", left: "62%", dx: -10, dy: 14, dur: 6.4, delay: 1.1 },
+      { top: "34%", left: "38%", dx: 10, dy: 12, dur: 7.6, delay: 1.3 },
+      { top: "68%", left: "42%", dx: -12, dy: 12, dur: 6.0, delay: 0.8 },
+      { top: "40%", left: "84%", dx: -14, dy: 10, dur: 6.6, delay: 0.5 },
+      { top: "58%", left: "14%", dx: 16, dy: 8, dur: 7.2, delay: 1.0 },
+    ],
+    []
+  );
 
   return (
     <Card className="bg-card/95 backdrop-blur-sm border-primary/20">
@@ -130,77 +172,109 @@ export default function MovimentacaoDia() {
           Movimentação do Dia
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Veja como está a barbearia agora
+          Acompanhe a quantidade de agendamentos do dia (sem exibir dados dos clientes)
         </p>
       </CardHeader>
+
       <CardContent>
         {loading ? (
           <div className="h-40 flex items-center justify-center">
             <div className="animate-pulse text-muted-foreground">Carregando...</div>
           </div>
+        ) : errorMsg ? (
+          <div className="rounded-lg border border-border/50 bg-muted/20 p-4 text-sm text-muted-foreground">
+            {errorMsg}
+          </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {/* Ilustração da barbearia */}
-            <div className="relative bg-muted/30 rounded-lg p-4 min-h-[200px] overflow-hidden">
-              {/* Chão */}
-              <div className="absolute inset-0 bg-gradient-to-b from-muted/20 to-muted/40" />
-              
-              {/* Cadeiras de barbeiro (vista superior) */}
-              <div className="absolute top-8 left-1/4 transform -translate-x-1/2">
-                <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-zinc-600 flex items-center justify-center">
-                  <div className="w-6 h-6 rounded-full bg-zinc-700" />
+            <div className="relative rounded-lg border border-border/50 overflow-hidden min-h-[220px] grid-pattern rough-surface">
+              <div className="absolute inset-0 bg-gradient-to-br from-background/0 via-background/20 to-background/40" />
+              <div className="relative h-[220px] p-4">
+                {/* Estações (cadeiras) */}
+                <div className="absolute top-7 left-[25%] -translate-x-1/2">
+                  <div className="h-14 w-14 rounded-full bg-secondary border border-border/60 shadow-sm flex items-center justify-center">
+                    <div className="h-7 w-7 rounded-full bg-muted border border-border/60" />
+                  </div>
+                  {/* Barbeiro 1 (preto) */}
+                  <div className="absolute -top-2 -left-3">
+                    <div className="crew-bob">
+                      <Crewmate toneClass="text-secondary" size="sm" />
+                    </div>
+                  </div>
                 </div>
-                {/* Barbeiro 1 */}
-                <div className="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-zinc-200 border border-zinc-400" />
-              </div>
-              
-              <div className="absolute top-8 right-1/4 transform translate-x-1/2">
-                <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-zinc-600 flex items-center justify-center">
-                  <div className="w-6 h-6 rounded-full bg-zinc-700" />
+
+                <div className="absolute top-7 right-[25%] translate-x-1/2">
+                  <div className="h-14 w-14 rounded-full bg-secondary border border-border/60 shadow-sm flex items-center justify-center">
+                    <div className="h-7 w-7 rounded-full bg-muted border border-border/60" />
+                  </div>
+                  {/* Barbeiro 2 (branco) */}
+                  <div className="absolute -top-2 -right-3">
+                    <div className="crew-bob" style={{ animationDelay: "0.4s" }}>
+                      <Crewmate toneClass="text-foreground" size="sm" />
+                    </div>
+                  </div>
                 </div>
-                {/* Barbeiro 2 */}
-                <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-zinc-200 border border-zinc-400" />
-              </div>
 
-              {/* Banco de espera (retângulo inferior) */}
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-3/4 h-4 bg-zinc-700 rounded" />
+                {/* Banco corrido */}
+                <div className="absolute bottom-7 left-1/2 -translate-x-1/2 w-[78%] h-5 rounded bg-secondary/70 border border-border/50" />
 
-              {/* Clientes sentados no banco (baseado no número de agendamentos) */}
-              {Array.from({ length: Math.min(totalAgendamentos, 6) }).map((_, i) => (
-                <div
-                  key={`sentado-${i}`}
-                  className="absolute bottom-8 w-3 h-3 rounded-full animate-pulse"
-                  style={{
-                    backgroundColor: coresClientes[i % coresClientes.length],
-                    left: `${20 + i * 12}%`,
-                    animationDelay: `${i * 0.2}s`
-                  }}
-                />
-              ))}
+                {/* Clientes sentados */}
+                {Array.from({ length: clientesSentados }).map((_, i) => (
+                  <div
+                    key={`sentado-${i}`}
+                    className="absolute bottom-10"
+                    style={{ left: `${18 + i * 11}%` }}
+                  >
+                    <div className="crew-bob" style={{ animationDelay: `${i * 0.15}s` }}>
+                      <Crewmate
+                        toneClass={clienteTones[i % clienteTones.length]}
+                        size="sm"
+                        variant="sitting"
+                      />
+                    </div>
+                  </div>
+                ))}
 
-              {/* Clientes em movimento (extras acima de 6) */}
-              {Array.from({ length: Math.max(0, Math.min(totalAgendamentos - 6, 4)) }).map((_, i) => (
-                <div
-                  key={`movimento-${i}`}
-                  className="absolute w-3 h-3 rounded-full"
-                  style={{
-                    backgroundColor: coresClientes[(i + 6) % coresClientes.length],
-                    top: `${40 + (i % 2) * 20}%`,
-                    left: `${30 + i * 15}%`,
-                    animation: `pulse 2s ease-in-out infinite`,
-                    animationDelay: `${i * 0.3}s`
-                  }}
-                />
-              ))}
+                {/* Clientes em movimento (Among Us andando) */}
+                {Array.from({ length: clientesEmMovimento }).map((_, i) => {
+                  const spot = wanderSpots[i % wanderSpots.length];
+                  const tone = clienteTones[(i + clientesSentados) % clienteTones.length];
 
-              {/* Status */}
-              <div className="absolute top-2 right-2 text-xs font-medium px-2 py-1 rounded bg-background/80">
-                <span className={statusBarbearia.cor}>{statusBarbearia.texto}</span>
-              </div>
+                  return (
+                    <div
+                      key={`movimento-${i}`}
+                      className="absolute"
+                      style={{ top: spot.top, left: spot.left }}
+                    >
+                      <div
+                        className="crew-wander"
+                        style={
+                          {
+                            "--dx": `${spot.dx}px`,
+                            "--dy": `${spot.dy}px`,
+                            "--dur": `${spot.dur}s`,
+                            animationDelay: `${spot.delay}s`,
+                          } as React.CSSProperties
+                        }
+                      >
+                        <div className="crew-bob" style={{ animationDelay: `${spot.delay}s` }}>
+                          <Crewmate toneClass={tone} size="md" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
 
-              {/* Total de agendamentos */}
-              <div className="absolute bottom-2 left-2 text-xs text-muted-foreground">
-                {totalAgendamentos} {totalAgendamentos === 1 ? "cliente esperado" : "clientes esperados"} hoje
+                {/* Status */}
+                <div className="absolute top-3 right-3 text-xs font-medium px-2 py-1 rounded bg-background/70 border border-border/50">
+                  <span className={statusBarbearia.className}>{statusBarbearia.texto}</span>
+                </div>
+
+                {/* Total */}
+                <div className="absolute bottom-3 left-3 text-xs text-muted-foreground">
+                  {totalAgendamentos} {totalAgendamentos === 1 ? "agendamento" : "agendamentos"} hoje
+                </div>
               </div>
             </div>
 
@@ -211,23 +285,23 @@ export default function MovimentacaoDia() {
                 <span>{horaAtual} - Agora</span>
               </div>
 
-              {/* Barras de horário */}
               <div className="flex items-end gap-1 h-24">
                 {horariosOperacao.map((hora) => {
-                  const agendamento = agendamentosHoje.find(a => a.hora === hora);
-                  const count = agendamento?.count || 0;
-                  const altura = count > 0 ? Math.max(20, (count / maxCount) * 100) : 10;
+                  const count = movement?.byHour?.[hora] ?? 0;
+                  const altura = count > 0 ? Math.max(18, (count / maxCount) * 100) : 10;
                   const isPico = horariosPico.includes(hora) && count > 0;
-                  
+
                   return (
-                    <div
-                      key={hora}
-                      className="flex-1 flex flex-col items-center gap-1"
-                    >
+                    <div key={hora} className="flex-1 flex flex-col items-center gap-1">
                       <div
-                        className={`w-full rounded-t transition-all duration-300 ${
-                          isPico ? "bg-red-500" : count > 0 ? "bg-white" : "bg-muted/40"
-                        }`}
+                        className={cn(
+                          "w-full rounded-t transition-all duration-300",
+                          isPico
+                            ? "bg-destructive"
+                            : count > 0
+                              ? "bg-foreground"
+                              : "bg-muted/40"
+                        )}
                         style={{ height: `${altura}%` }}
                         title={`${hora}h: ${count} agendamento(s)`}
                       />
@@ -236,7 +310,6 @@ export default function MovimentacaoDia() {
                 })}
               </div>
 
-              {/* Labels de hora */}
               <div className="flex gap-1 text-[10px] text-muted-foreground">
                 {horariosOperacao.map((hora, i) => (
                   <div key={hora} className="flex-1 text-center">
@@ -245,14 +318,13 @@ export default function MovimentacaoDia() {
                 ))}
               </div>
 
-              {/* Legenda */}
               <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t border-border/50">
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-red-500 rounded" />
+                  <div className="w-3 h-3 bg-destructive rounded" />
                   <span>Horário de pico</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-white rounded" />
+                  <div className="w-3 h-3 bg-foreground rounded" />
                   <span>Normal</span>
                 </div>
               </div>
