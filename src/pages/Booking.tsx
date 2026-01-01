@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import authBackground from "@/assets/background.png";
+import authBackground from "@/assets/auth-background.jpg";
 import ConsultaAgendamentos from "@/components/ConsultaAgendamentos";
 import ContactInfo from "@/components/ContactInfo";
 
