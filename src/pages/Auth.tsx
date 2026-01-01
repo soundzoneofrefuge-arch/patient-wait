@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import authBackground from "@/assets/background.png";
+import authBackground from "@/assets/auth-background.jpg";
 
 export default function Auth() {
   const navigate = useNavigate();
