@@ -482,7 +482,7 @@ export default function Booking() {
                 className={cn(
                   "w-full text-xl font-bold transition-all duration-300",
                   isFormValid 
-                    ? "bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.5)]" 
+                    ? "bg-warning text-white hover:bg-warning/90 shadow-[0_0_20px_rgba(245,158,11,0.6)]" 
                     : "bg-muted/50 text-muted-foreground"
                 )}
               >
