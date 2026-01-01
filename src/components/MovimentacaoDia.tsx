@@ -13,15 +13,16 @@ export default function MovimentacaoDia() {
   const [totalAgendamentos, setTotalAgendamentos] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Obter data de hoje no fuso horário do Brasil
+  // Obter data de hoje no fuso horário do Brasil (formato YYYY-MM-DD)
   const hoje = useMemo(() => {
-    const brazilTime = new Date().toLocaleString("en-CA", {
-      timeZone: "America/Sao_Paulo",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    }).split('T')[0];
-    return brazilTime;
+    const now = new Date();
+    const brazilFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    return brazilFormatter.format(now); // Retorna "2026-01-01"
   }, []);
 
   useEffect(() => {
