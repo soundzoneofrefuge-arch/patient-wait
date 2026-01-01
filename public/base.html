@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script>
+    // Detecta o base path automaticamente para GitHub Pages
+    (function() {
+      var pathSegments = window.location.pathname.split('/');
+      var repoName = pathSegments[1];
+      
+      // Se estamos no GitHub Pages e não na raiz
+      if (window.location.hostname.includes('github.io') && repoName && repoName !== '') {
+        var base = document.createElement('base');
+        base.href = '/' + repoName + '/';
+        document.head.appendChild(base);
+        console.log('GitHub Pages base path set to:', base.href);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <script>
+    // Redireciona para o index.html principal
+    window.location.href = './index.html';
+  </script>
+</body>
+</html>

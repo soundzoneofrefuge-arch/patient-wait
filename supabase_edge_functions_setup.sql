@@ -1,0 +1,439 @@
+-- =====================================================
+-- DOCUMENTAÇÃO DAS EDGE FUNCTIONS DO PROJETO
+-- =====================================================
+-- 
+-- IMPORTANTE: Edge Functions não são criadas via SQL.
+-- Este arquivo serve como DOCUMENTAÇÃO e REFERÊNCIA das
+-- edge functions implementadas no projeto.
+--
+-- As edge functions estão localizadas em: supabase/functions/
+-- Elas são automaticamente implantadas quando o código é enviado.
+-- =====================================================
+
+-- =====================================================
+-- CONFIGURAÇÃO NO SUPABASE DASHBOARD
+-- =====================================================
+-- 
+-- Para verificar/gerenciar as edge functions:
+-- 1. Acesse: https://supabase.com/dashboard/project/idnjdznpzjqhfjfetbdy/functions
+-- 2. Para configurar secrets: https://supabase.com/dashboard/project/idnjdznpzjqhfjfetbdy/settings/functions
+-- 3. Para ver logs: https://supabase.com/dashboard/project/idnjdznpzjqhfjfetbdy/functions/{function_name}/logs
+--
+-- =====================================================
+
+-- =====================================================
+-- SECRETS NECESSÁRIOS
+-- =====================================================
+-- 
+-- Os seguintes secrets já estão configurados automaticamente:
+-- - SUPABASE_URL
+-- - SUPABASE_SERVICE_ROLE_KEY
+-- - SUPABASE_ANON_KEY
+-- - SUPABASE_PUBLISHABLE_KEY
+-- - SUPABASE_DB_URL
+--
+-- =====================================================
+
+-- =====================================================
+-- 1. BOOK_SLOT - Criar Agendamento
+-- =====================================================
+-- Localização: supabase/functions/book_slot/index.ts
+-- Método: POST
+-- Autenticação: Pública (verify_jwt = false)
+--
+-- Descrição:
+-- Cria um novo agendamento, verificando disponibilidade e feriados.
+-- Gera senha alfanumérica de 4 dígitos e atualiza cadastro do cliente.
+--
+-- Body (JSON):
+-- {
+--   "date": "2025-01-15",           // Obrigatório: Data do agendamento (YYYY-MM-DD)
+--   "time": "14:00:00",             // Obrigatório: Hora do agendamento (HH:MM:SS)
+--   "name": "João Silva",           // Obrigatório: Nome do cliente
+--   "contact": "(11) 98765-4321",   // Obrigatório: Contato do cliente
+--   "professional": "Maria",        // Obrigatório: Nome do profissional
+--   "service": "Corte de Cabelo"    // Obrigatório: Nome do serviço
+-- }
+--
+-- Resposta de Sucesso (200):
+-- {
+--   "booking": {
+--     "id": 123,
+--     "DATA": "2025-01-15",
+--     "HORA": "14:00:00",
+--     "NOME": "João Silva",
+--     "CONTATO": "(11) 98765-4321",
+--     "PROFISSIONAL": "Maria",
+--     "servico": "Corte de Cabelo",
+--     "STATUS": "AGENDADO",
+--     "senha": "A1B2"
+--   }
+-- }
+--
+-- Erros Possíveis:
+-- - 400: Campos obrigatórios faltando
+-- - 400: Data é feriado
+-- - 409: Horário já possui agendamento (conflito)
+-- - 500: Erro interno do servidor
+--
+-- =====================================================
+
+-- =====================================================
+-- 2. CANCEL_BOOKING - Cancelar Agendamento
+-- =====================================================
+-- Localização: supabase/functions/cancel_booking/index.ts
+-- Método: POST
+-- Autenticação: Pública (verify_jwt = false)
+--
+-- Descrição:
+-- Cancela um agendamento existente validando todos os dados fornecidos.
+--
+-- Body (JSON):
+-- {
+--   "name": "João Silva",           // Obrigatório: Nome exato do agendamento
+--   "contact": "(11) 98765-4321",   // Obrigatório: Contato exato
+--   "date": "2025-01-15",           // Obrigatório: Data do agendamento
+--   "time": "14:00:00",             // Obrigatório: Hora do agendamento
+--   "senha": "A1B2"                 // Obrigatório: Senha do agendamento
+-- }
+--
+-- Resposta de Sucesso (200):
+-- {
+--   "message": "Agendamento cancelado com sucesso",
+--   "booking": { ...dados do agendamento cancelado... }
+-- }
+--
+-- Erros Possíveis:
+-- - 400: Campos obrigatórios faltando
+-- - 404: Agendamento não encontrado ou já cancelado
+-- - 500: Erro interno do servidor
+--
+-- =====================================================
+
+-- =====================================================
+-- 3. RESCHEDULE_BOOKING - Reagendar Agendamento
+-- =====================================================
+-- Localização: supabase/functions/reschedule_booking/index.ts
+-- Método: POST
+-- Autenticação: Pública (verify_jwt = false)
+--
+-- Descrição:
+-- Reagenda um agendamento existente para nova data/hora.
+-- Gera nova senha alfanumérica e altera STATUS para "REAGENDADO".
+--
+-- Body (JSON):
+-- {
+--   "name": "João Silva",           // Obrigatório: Nome do agendamento atual
+--   "contact": "(11) 98765-4321",   // Obrigatório: Contato
+--   "date": "2025-01-15",           // Obrigatório: Data atual do agendamento
+--   "time": "14:00:00",             // Obrigatório: Hora atual
+--   "senha": "A1B2",                // Obrigatório: Senha atual
+--   "newDate": "2025-01-20",        // Obrigatório: Nova data desejada
+--   "newTime": "15:00:00"           // Obrigatório: Nova hora desejada
+-- }
+--
+-- Resposta de Sucesso (200):
+-- {
+--   "booking": {
+--     ...dados atualizados...,
+--     "DATA": "2025-01-20",
+--     "HORA": "15:00:00",
+--     "STATUS": "REAGENDADO",
+--     "senha": "C3D4"  // Nova senha gerada
+--   }
+-- }
+--
+-- Erros Possíveis:
+-- - 400: Campos obrigatórios faltando
+-- - 400: Nova data é feriado
+-- - 404: Agendamento original não encontrado
+-- - 409: Novo horário já possui agendamento
+-- - 500: Erro interno do servidor
+--
+-- =====================================================
+
+-- =====================================================
+-- 4. QUERY_BOOKINGS - Consultar Agendamentos
+-- =====================================================
+-- Localização: supabase/functions/query_bookings/index.ts
+-- Método: POST
+-- Autenticação: Pública (verify_jwt = false)
+--
+-- Descrição:
+-- Busca agendamentos futuros de um cliente usando contato e senha.
+-- Retorna apenas agendamentos não cancelados e com horário futuro.
+--
+-- Body (JSON):
+-- {
+--   "contact": "(11) 98765-4321",   // Obrigatório: Contato do cliente
+--   "senha": "A1B2"                 // Obrigatório: Senha de algum agendamento
+-- }
+--
+-- Resposta de Sucesso (200):
+-- {
+--   "bookings": [
+--     {
+--       "id": 123,
+--       "DATA": "2025-01-20",
+--       "HORA": "15:00:00",
+--       "NOME": "João Silva",
+--       "CONTATO": "(11) 98765-4321",
+--       "PROFISSIONAL": "Maria",
+--       "servico": "Corte de Cabelo",
+--       "STATUS": "AGENDADO",
+--       "senha": "A1B2"
+--     }
+--   ]
+-- }
+--
+-- Notas:
+-- - Filtra automaticamente por data/hora usando timezone America/Sao_Paulo
+-- - Exclui agendamentos com STATUS = "CANCELADO"
+-- - Valida senha individualmente para cada agendamento
+--
+-- Erros Possíveis:
+-- - 400: Contato ou senha faltando
+-- - 500: Erro interno do servidor
+--
+-- =====================================================
+
+-- =====================================================
+-- 5. AUTHENTICATE_ADMIN - Autenticar Administrador
+-- =====================================================
+-- Localização: supabase/functions/authenticate_admin/index.ts
+-- Método: POST
+-- Autenticação: Pública (verify_jwt = false)
+--
+-- Descrição:
+-- Valida credenciais de administrador verificando email na tabela
+-- info_loja e senha através do Supabase Auth.
+--
+-- Body (JSON):
+-- {
+--   "email": "admin@example.com",   // Obrigatório: Email do admin
+--   "password": "senha123"          // Obrigatório: Senha do admin
+-- }
+--
+-- Resposta de Sucesso (200):
+-- {
+--   "authenticated": true,
+--   "user": { ...dados do usuário autenticado... }
+-- }
+--
+-- Resposta de Erro (401):
+-- {
+--   "error": "Credenciais inválidas",
+--   "authenticated": false
+-- }
+--
+-- Notas:
+-- - Primeiro verifica se email está cadastrado em info_loja.auth_user
+-- - Depois valida senha usando Supabase Auth
+-- - Ambas validações devem passar para autenticar
+--
+-- Erros Possíveis:
+-- - 400: Email ou senha faltando
+-- - 401: Credenciais inválidas
+-- - 500: Erro interno do servidor
+--
+-- =====================================================
+
+-- =====================================================
+-- 6. UPDATE_FINALIZACAO - Atualizar Finalização
+-- =====================================================
+-- Localização: supabase/functions/update_finalizacao/index.ts
+-- Método: POST
+-- Autenticação: Pública (verify_jwt = false)
+--
+-- Descrição:
+-- Atualiza o status de finalização de um agendamento.
+-- Se marcado como "NÃO EFETIVADO", também marca STATUS como "CANCELADO".
+--
+-- Body (JSON):
+-- {
+--   "id": 123,                      // Obrigatório: ID do agendamento
+--   "statusFinal": "EFETIVADO"      // Obrigatório: "EFETIVADO" ou "NÃO EFETIVADO"
+-- }
+--
+-- Resposta de Sucesso (200):
+-- {
+--   "booking": {
+--     ...dados atualizados...,
+--     "finalização": "EFETIVADO",
+--     "STATUS": "AGENDADO" // ou "CANCELADO" se statusFinal = "NÃO EFETIVADO"
+--   }
+-- }
+--
+-- Notas:
+-- - statusFinal aceita apenas: "EFETIVADO" ou "NÃO EFETIVADO"
+-- - "NÃO EFETIVADO" automaticamente muda STATUS para "CANCELADO"
+--
+-- Erros Possíveis:
+-- - 400: ID ou statusFinal faltando
+-- - 400: statusFinal inválido
+-- - 500: Erro interno do servidor
+--
+-- =====================================================
+
+-- =====================================================
+-- 7. KEEP_ALIVE - Manter Projeto Ativo
+-- =====================================================
+-- Localização: supabase/functions/keep-alive/index.ts
+-- Método: GET/POST
+-- Autenticação: Pública (verify_jwt = false)
+--
+-- Descrição:
+-- Função utilitária para manter o projeto Supabase ativo.
+-- Faz uma consulta simples na tabela agendamentos_robustos.
+--
+-- Resposta de Sucesso (200):
+-- {
+--   "message": "Projeto mantido ativo com sucesso!"
+-- }
+--
+-- Notas:
+-- - Pode ser chamada periodicamente por serviços de monitoramento
+-- - Previne que o projeto entre em modo de hibernação
+--
+-- Erros Possíveis:
+-- - 400: Erro ao acessar banco de dados
+--
+-- =====================================================
+
+-- =====================================================
+-- 8. GET_AVAILABLE_SLOTS - Obter Horários Disponíveis
+-- =====================================================
+-- Localização: supabase/functions/get_available_slots/index.ts
+-- Método: POST
+-- Autenticação: Pública (verify_jwt = false)
+--
+-- Descrição:
+-- Retorna horários disponíveis para agendamento em uma data específica,
+-- considerando horários de funcionamento e agendamentos existentes.
+--
+-- Body (JSON):
+-- {
+--   "date": "2025-01-15",           // Obrigatório: Data para consultar
+--   "professional": "Maria"         // Opcional: Filtrar por profissional
+-- }
+--
+-- Resposta de Sucesso (200):
+-- {
+--   "slots": [
+--     "09:00:00",
+--     "09:30:00",
+--     "10:00:00",
+--     ...
+--   ]
+-- }
+--
+-- Notas:
+-- - Retorna apenas horários futuros se a data for hoje
+-- - Considera feriados e horários já agendados
+-- - Se professional não for especificado, retorna todos horários gerais
+--
+-- Erros Possíveis:
+-- - 400: Data faltando
+-- - 500: Erro interno do servidor
+--
+-- =====================================================
+
+-- =====================================================
+-- CONFIGURAÇÃO NO ARQUIVO supabase/config.toml
+-- =====================================================
+--
+-- Todas as funções devem estar listadas em supabase/config.toml:
+--
+-- [functions.book_slot]
+-- verify_jwt = false
+--
+-- [functions.cancel_booking]
+-- verify_jwt = false
+--
+-- [functions.reschedule_booking]
+-- verify_jwt = false
+--
+-- [functions.query_bookings]
+-- verify_jwt = false
+--
+-- [functions.authenticate_admin]
+-- verify_jwt = false
+--
+-- [functions.update_finalizacao]
+-- verify_jwt = false
+--
+-- [functions.keep-alive]
+-- verify_jwt = false
+--
+-- [functions.get_available_slots]
+-- verify_jwt = false
+--
+-- =====================================================
+
+-- =====================================================
+-- COMO CHAMAR AS EDGE FUNCTIONS NO CÓDIGO
+-- =====================================================
+--
+-- Exemplo usando o cliente Supabase:
+--
+-- import { supabase } from "@/integrations/supabase/client";
+--
+-- const { data, error } = await supabase.functions.invoke('book_slot', {
+--   body: {
+--     date: '2025-01-15',
+--     time: '14:00:00',
+--     name: 'João Silva',
+--     contact: '(11) 98765-4321',
+--     professional: 'Maria',
+--     service: 'Corte de Cabelo'
+--   }
+-- });
+--
+-- if (error) {
+--   console.error('Erro:', error);
+-- } else {
+--   console.log('Sucesso:', data);
+-- }
+--
+-- =====================================================
+
+-- =====================================================
+-- TESTANDO AS EDGE FUNCTIONS
+-- =====================================================
+--
+-- Você pode testar as edge functions usando:
+--
+-- 1. Dashboard do Supabase (recomendado para testes rápidos)
+-- 2. Postman ou similar para testes de API
+-- 3. Diretamente no código da aplicação
+--
+-- URL base das funções:
+-- https://idnjdznpzjqhfjfetbdy.supabase.co/functions/v1/{function_name}
+--
+-- Exemplo de chamada com curl:
+--
+-- curl -X POST \
+--   'https://idnjdznpzjqhfjfetbdy.supabase.co/functions/v1/book_slot' \
+--   -H 'Content-Type: application/json' \
+--   -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \
+--   -d '{"date":"2025-01-15","time":"14:00:00",...}'
+--
+-- =====================================================
+
+-- =====================================================
+-- MONITORAMENTO E LOGS
+-- =====================================================
+--
+-- Para visualizar logs das edge functions:
+-- https://supabase.com/dashboard/project/idnjdznpzjqhfjfetbdy/functions/{function_name}/logs
+--
+-- Os logs incluem:
+-- - Requisições recebidas
+-- - Erros e exceções
+-- - console.log() das funções
+-- - Tempo de execução
+-- - Códigos de status HTTP
+--
+-- =====================================================
+
+-- FIM DA DOCUMENTAÇÃO DAS EDGE FUNCTIONS

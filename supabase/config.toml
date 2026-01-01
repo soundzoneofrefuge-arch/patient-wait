@@ -1,0 +1,32 @@
+# Supabase Project Configuration
+# ⚠️ NÃO coloque credenciais reais aqui!
+# Use GitHub Secrets para deploy automático
+# Use .env local para desenvolvimento
+
+# Project ID correto
+project_id = "tmdtwkufvwlzoarslvip"
+
+# Edge Functions Configuration
+[functions.book_slot]
+verify_jwt = false
+
+[functions.cancel_booking]
+verify_jwt = false
+
+[functions.reschedule_booking]
+verify_jwt = false
+
+[functions.query_bookings]
+verify_jwt = false
+
+[functions.authenticate_admin]
+verify_jwt = false
+
+[functions.update_finalizacao]
+verify_jwt = false
+
+[functions.keep-alive]
+verify_jwt = false
+
+[functions.get_available_slots]
+verify_jwt = false

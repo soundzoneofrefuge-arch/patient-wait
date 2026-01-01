@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Dashboard ASPERUS</title>
+    <script>
+      // GitHub Pages SPA redirect script
+      var segmentCount = 1;
+      var l = window.location;
+      
+      // Detecta se estamos no GitHub Pages
+      var isGitHubPages = l.hostname.includes('github.io');
+      
+      if (isGitHubPages) {
+        // Para GitHub Pages, mantém o repositório na URL
+        var pathSegments = l.pathname.split('/');
+        var repoName = pathSegments[1];
+        
+        if (repoName && pathSegments.length > 2) {
+          l.replace(
+            l.protocol + '//' + l.hostname + '/' + repoName + '/?/' +
+            pathSegments.slice(2).join('/').replace(/&/g, '~and~') +
+            (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+            l.hash
+          );
+        } else {
+          // Fallback para root do repositório
+          l.replace(l.protocol + '//' + l.hostname + '/' + repoName + '/');
+        }
+      } else {
+        // Para outros domínios, usa o comportamento padrão
+        l.replace(
+          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          l.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/?/' +
+          l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+        );
+      }
+    </script>
+  </head>
+  <body></body>
+</html>
