@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
 import ConsultaAgendamentos from "@/components/ConsultaAgendamentos";
 import ContactInfo from "@/components/ContactInfo";
+import MovimentacaoDia from "@/components/MovimentacaoDia";
 
 interface LojaConfig {
   opening_time?: string;
@@ -25,6 +26,12 @@ interface LojaConfig {
   nome_profissionais?: string;
   escolha_serviços?: string;
   instructions?: string;
+}
+
+// Validação de contato brasileiro (8-11 dígitos numéricos)
+function isValidBrazilContact(contact: string): boolean {
+  const digits = contact.replace(/\D/g, "");
+  return digits.length >= 8 && digits.length <= 11;
 }
 
 export default function Booking() {
@@ -43,6 +50,11 @@ export default function Booking() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  // Verificar se o formulário é válido para habilitar botão luminoso
+  const isFormValid = useMemo(() => {
+    return isValidBrazilContact(contact) && name.trim() !== "" && selectedSlot && selectedDateStr && professional && service;
+  }, [contact, name, selectedSlot, selectedDateStr, professional, service]);
 
   useEffect(() => {
     document.title = "Agendar atendimento | ÁSPERUS";
@@ -336,14 +348,21 @@ export default function Booking() {
 
         <div className="grid gap-6 md:grid-cols-3">
           {/* Data */}
-          <Card>
+          <Card className={cn(date && "ring-2 ring-primary")}>
             <CardHeader>
-              <CardTitle>Data</CardTitle>
+              <CardTitle className={cn(date && "text-primary")}>Data</CardTitle>
             </CardHeader>
             <CardContent>
               <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                  <Button 
+                    variant="outline" 
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground",
+                      date && "bg-primary text-white hover:bg-primary/90 border-primary"
+                    )}
+                  >
                     <CalendarIcon />
                     {date ? format(date, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
                   </Button>
@@ -351,21 +370,21 @@ export default function Booking() {
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar mode="single" selected={date} onSelect={newDate => {
                     setDate(newDate);
-                    setIsDatePickerOpen(false); // Fechar calendário após seleção
+                    setIsDatePickerOpen(false);
                   }} initialFocus className={cn("p-3 pointer-events-auto [&_.rdp-head]:hidden [&_.rdp-weekdays]:hidden")} />
                 </PopoverContent>
               </Popover>
             </CardContent>
           </Card>
 
-          {/* Profissional (opcional) */}
-          <Card>
+          {/* Profissional */}
+          <Card className={cn(professional && "ring-2 ring-primary")}>
             <CardHeader>
-              <CardTitle>Profissional</CardTitle>
+              <CardTitle className={cn(professional && "text-primary")}>Profissional</CardTitle>
             </CardHeader>
             <CardContent>
               <Select value={professional || undefined} onValueChange={setProfessional}>
-                <SelectTrigger>
+                <SelectTrigger className={cn(professional && "bg-primary text-white border-primary [&>svg]:text-white")}>
                   <SelectValue placeholder="Selecione um profissional" />
                 </SelectTrigger>
                 <SelectContent>
@@ -375,14 +394,14 @@ export default function Booking() {
             </CardContent>
           </Card>
 
-          {/* Serviço (obrigatório) */}
-          <Card>
+          {/* Serviço */}
+          <Card className={cn(service && "ring-2 ring-primary")}>
             <CardHeader>
-              <CardTitle>Serviço</CardTitle>
+              <CardTitle className={cn(service && "text-primary")}>Serviço</CardTitle>
             </CardHeader>
             <CardContent>
               <Select value={service || undefined} onValueChange={setService}>
-                <SelectTrigger>
+                <SelectTrigger className={cn(service && "bg-primary text-white border-primary [&>svg]:text-white")}>
                   <SelectValue placeholder="Selecione um serviço" />
                 </SelectTrigger>
                 <SelectContent>
@@ -459,12 +478,17 @@ export default function Booking() {
             <div className="md:col-span-2">
               <Button
                 onClick={handleBook}
-                disabled={!selectedSlot || !selectedDateStr || !name || !contact || !professional || !service}
-                className="w-full text-slate-50 text-xl font-bold"
+                disabled={!isFormValid}
+                className={cn(
+                  "w-full text-xl font-bold transition-all duration-300",
+                  isFormValid 
+                    ? "bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.5)]" 
+                    : "bg-muted/50 text-muted-foreground"
+                )}
               >
                 AGENDAR
               </Button>
-              {!selectedSlot && (
+              {!isFormValid && (
                 <p className="mt-2 text-sm text-muted-foreground">
                   Confirme e seja redirecionado(a) a confirmação de seu agendamento
                 </p>
@@ -472,6 +496,11 @@ export default function Booking() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Movimentação do Dia */}
+        <div className="mt-6">
+          <MovimentacaoDia />
+        </div>
 
         {/* Confirmação */}
         {booking && (

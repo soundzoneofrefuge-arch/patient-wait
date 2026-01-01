@@ -17,6 +17,17 @@ import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
 import ContactInfo from "@/components/ContactInfo";
 
+// Validação de contato brasileiro (8-11 dígitos numéricos)
+function isValidBrazilContact(contact: string): boolean {
+  const digits = contact.replace(/\D/g, "");
+  return digits.length >= 8 && digits.length <= 11;
+}
+
+// Validação de senha (4 dígitos)
+function isValidSenha(senha: string): boolean {
+  return senha.length === 4;
+}
+
 interface Agendamento {
   id: string;
   NOME: string;
@@ -53,6 +64,12 @@ export default function Reschedule() {
   const [userBookings, setUserBookings] = useState<Agendamento[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Agendamento | null>(null);
+
+  // Verificar se pode reagendar
+  const canReschedule = useMemo(() => {
+    return isValidBrazilContact(oldContact) && isValidSenha(senha) && selectedBooking !== null && selectedSlot !== null && selectedDateStr !== null;
+  }, [oldContact, senha, selectedBooking, selectedSlot, selectedDateStr]);
+
   useEffect(() => {
     document.title = "Reagendar atendimento | ÁSPERUS";
   }, []);
@@ -545,8 +562,13 @@ export default function Reschedule() {
           <CardContent className="pt-6">
             <Button 
               onClick={handleReschedule} 
-              disabled={!selectedBooking || !selectedSlot || !selectedDateStr} 
-              className="w-full bg-warning hover:bg-warning/90 text-warning-foreground text-xl font-bold"
+              disabled={!canReschedule} 
+              className={cn(
+                "w-full text-xl font-bold transition-all duration-300",
+                canReschedule 
+                  ? "bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.5)]" 
+                  : "bg-muted/50 text-muted-foreground"
+              )}
             >
               REAGENDAR
             </Button>
