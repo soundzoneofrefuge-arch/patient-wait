@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, ArrowLeft, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import authBackground from "@/assets/background.png";
+import authBackground from "@/assets/auth-background.jpg";
 import ContactInfo from "@/components/ContactInfo";
 
 interface Agendamento {
