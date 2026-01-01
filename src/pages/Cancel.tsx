@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,17 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import ContactInfo from "@/components/ContactInfo";
+
+// Validação de contato brasileiro (8-11 dígitos numéricos)
+function isValidBrazilContact(contact: string): boolean {
+  const digits = contact.replace(/\D/g, "");
+  return digits.length >= 8 && digits.length <= 11;
+}
+
+// Validação de senha (4 dígitos)
+function isValidSenha(senha: string): boolean {
+  return senha.length === 4;
+}
 
 interface Agendamento {
   id: string;
@@ -32,6 +43,12 @@ export default function Cancel() {
   const [userBookings, setUserBookings] = useState<Agendamento[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Agendamento | null>(null);
+
+  // Verificar se pode cancelar
+  const canCancel = useMemo(() => {
+    return isValidBrazilContact(contact) && isValidSenha(senha) && selectedBooking !== null;
+  }, [contact, senha, selectedBooking]);
+
   useEffect(() => {
     document.title = "Cancelar atendimento | ÁSPERUS";
   }, []);
@@ -244,8 +261,13 @@ export default function Cancel() {
             <CardContent className="pt-6">
               <Button 
                 onClick={handleCancel} 
-                disabled={!selectedBooking || isLoading} 
-                className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xl font-bold"
+                disabled={!canCancel || isLoading} 
+                className={cn(
+                  "w-full text-xl font-bold transition-all duration-300",
+                  canCancel 
+                    ? "bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.5)]" 
+                    : "bg-muted/50 text-muted-foreground"
+                )}
               >
                 {isLoading ? "CANCELANDO..." : "CANCELAR AGENDAMENTO"}
               </Button>
