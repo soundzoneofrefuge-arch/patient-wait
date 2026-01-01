@@ -341,10 +341,14 @@ export default function Booking() {
           </div>
         </header>
 
-        {/* Consulta de Agendamentos */}
-        <div className="grid gap-6 md:grid-cols-2 mb-6">
+        {/* Consulta de Agendamentos + Movimentação do Dia */}
+        <section
+          aria-label="Consulta e movimentação"
+          className="grid gap-6 md:grid-cols-2 mb-6"
+        >
           <ConsultaAgendamentos />
-        </div>
+          <MovimentacaoDia />
+        </section>
 
         <div className="grid gap-6 md:grid-cols-3">
           {/* Data */}
@@ -497,10 +501,6 @@ export default function Booking() {
           </CardContent>
         </Card>
 
-        {/* Movimentação do Dia */}
-        <div className="mt-6">
-          <MovimentacaoDia />
-        </div>
 
         {/* Confirmação */}
         {booking && (
