@@ -20,70 +20,82 @@ export default function ResetPassword() {
 
   useEffect(() => {
     document.title = "Redefinir Senha | ÁSPERUS";
-    
-    // Processar tokens da URL (Supabase envia tokens como query params ou hash)
+
     const processRecoveryToken = async () => {
       try {
-        // O Supabase pode enviar o token de diferentes formas
-        // Verificar se há parâmetros na URL (antes do hash)
-        const fullUrl = window.location.href;
-        console.log("Processing recovery URL:", fullUrl);
-        
-        // Extrair access_token e refresh_token da URL
-        let accessToken = null;
-        let refreshToken = null;
-        let type = null;
-        
-        // Verificar nos query params
-        const urlParams = new URLSearchParams(window.location.search);
-        accessToken = urlParams.get('access_token');
-        refreshToken = urlParams.get('refresh_token');
-        type = urlParams.get('type');
-        
-        // Se não encontrou, verificar no hash (pode vir após #)
-        if (!accessToken) {
-          const hashParams = new URLSearchParams(window.location.hash.replace('#', '').split('?')[1] || '');
-          accessToken = hashParams.get('access_token');
-          refreshToken = hashParams.get('refresh_token');
-          type = hashParams.get('type');
+        const href = window.location.href;
+
+        const getParam = (name: string) => {
+          const match = new RegExp(`[?&#]${name}=([^&#]+)`).exec(href);
+          return match ? decodeURIComponent(match[1]) : null;
+        };
+
+        const code = getParam("code");
+        const accessToken = getParam("access_token");
+        const refreshToken = getParam("refresh_token");
+        const type = getParam("type");
+        const errorDescription = getParam("error_description") || getParam("error");
+
+        if (errorDescription) {
+          toast.error(decodeURIComponent(errorDescription));
         }
-        
-        // Também verificar no formato de fragmento (#access_token=...)
-        if (!accessToken && fullUrl.includes('access_token=')) {
-          const fragment = fullUrl.split('#')[1] || fullUrl.split('?')[1] || '';
-          const fragmentParams = new URLSearchParams(fragment.replace(/^\//, ''));
-          accessToken = fragmentParams.get('access_token');
-          refreshToken = fragmentParams.get('refresh_token');
-          type = fragmentParams.get('type');
-        }
-        
-        console.log("Token type:", type, "Has access token:", !!accessToken);
-        
-        if (accessToken && type === 'recovery') {
-          // Definir a sessão com os tokens
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || '',
-          });
-          
+
+        // Formato novo/alternativo: ?code=... (PKCE)
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) {
-            console.error("Erro ao definir sessão:", error);
+            console.error("Erro ao trocar code por sessão (recovery):", error);
             toast.error("Link de recuperação inválido ou expirado.");
-            setIsVerifying(false);
+            setSessionReady(false);
             return;
           }
-          
-          console.log("Sessão definida com sucesso:", data);
+
           setSessionReady(true);
-        } else {
-          // Verificar se já tem uma sessão válida
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            setSessionReady(true);
-          } else {
-            toast.error("Nenhum token de recuperação encontrado. Use o link do email.");
-          }
+          window.history.replaceState(
+            {},
+            document.title,
+            `${window.location.origin}${window.location.pathname}#/reset-password`
+          );
+          return;
         }
+
+        // Caso mais comum: tokens no fragment/query
+        // Observação: com HashRouter o link pode chegar como #/reset-password?access_token=...
+        if (accessToken && refreshToken && (type === "recovery" || !type)) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            console.error("Erro ao definir sessão (recovery):", error);
+            toast.error("Link de recuperação inválido ou expirado.");
+            setSessionReady(false);
+            return;
+          }
+
+          setSessionReady(true);
+
+          // Limpar tokens da URL (segurança) mantendo a rota
+          window.history.replaceState(
+            {},
+            document.title,
+            `${window.location.origin}${window.location.pathname}#/reset-password`
+          );
+          return;
+        }
+
+        // Fallback: se já existe sessão válida, permitir redefinição
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          setSessionReady(true);
+          return;
+        }
+
+        toast.error("Nenhum link de recuperação encontrado. Use o link do email.");
       } catch (e) {
         console.error("Erro ao processar token:", e);
         toast.error("Erro ao processar link de recuperação.");
@@ -91,9 +103,21 @@ export default function ResetPassword() {
         setIsVerifying(false);
       }
     };
-    
+
     processRecoveryToken();
   }, []);
+
+      } catch (e) {
+        console.error("Erro ao processar token:", e);
+        toast.error("Erro ao processar link de recuperação.");
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    processRecoveryToken();
+  }, []);
+
 
   async function handleResetPassword() {
     if (!password || !confirmPassword) {

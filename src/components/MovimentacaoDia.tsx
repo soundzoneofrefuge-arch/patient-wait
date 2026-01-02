@@ -31,9 +31,45 @@ function getBrazilCurrentTime() {
   }).format(now);
 }
 
+/* ===================== STATUS INDICATOR ===================== */
+
+function StatusRing({
+  level,
+  colorClass,
+  className,
+}: {
+  level: 0 | 1 | 2 | 3;
+  colorClass: string;
+  className?: string;
+}) {
+  const segments = [
+    // 1/4 (top-right)
+    "M10 10 L10 2 A8 8 0 0 1 18 10 Z",
+    // 2/4 (bottom-right)
+    "M10 10 L18 10 A8 8 0 0 1 10 18 Z",
+    // 3/4 (bottom-left)
+    "M10 10 L10 18 A8 8 0 0 1 2 10 Z",
+  ] as const;
+
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className={cn("h-3.5 w-3.5", className)}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="10" cy="10" r="8" className="fill-none stroke-border" strokeWidth="2" />
+      {segments.slice(0, level).map((d) => (
+        <path key={d} d={d} className={colorClass} />
+      ))}
+    </svg>
+  );
+}
+
 /* ===================== SVG COMPONENTS ===================== */
 
 // Cadeira de barbearia clássica (vista lateral simplificada)
+
 function BarberChair({ className }: { className?: string }) {
   return (
     <svg
@@ -326,7 +362,26 @@ export default function MovimentacaoDia() {
     return { texto: "Muito movimentado", className: "text-destructive" };
   }, [agendamentosFuturos]);
 
+  const statusViz = useMemo(() => {
+    const texto = statusBarbearia.texto.toLowerCase();
+
+    if (texto.includes("muito")) {
+      return { level: 3 as const, fillClass: "fill-destructive" };
+    }
+
+    if (texto.includes("moderado") || texto.includes("bastante")) {
+      return { level: 2 as const, fillClass: "fill-warning" };
+    }
+
+    if (texto.includes("pouco") || texto.includes("tranquilo")) {
+      return { level: 1 as const, fillClass: "fill-success" };
+    }
+
+    return { level: 0 as const, fillClass: "fill-muted-foreground" };
+  }, [statusBarbearia.texto]);
+
   // Horários de operação (09h às 20h)
+
   const horariosOperacao = useMemo(() => {
     const horas: string[] = [];
     for (let i = 9; i <= 20; i++) horas.push(String(i).padStart(2, "0"));
@@ -393,11 +448,12 @@ export default function MovimentacaoDia() {
           </div>
           {/* Status badge - canto superior direito do card */}
           <div className="flex items-center gap-1.5 text-xs font-semibold bg-background/70 backdrop-blur-sm rounded-full px-2.5 py-1 border border-border/30">
-            <span className={`w-2 h-2 rounded-full ${statusBarbearia.className === 'text-success' ? 'bg-success' : statusBarbearia.className === 'text-warning' ? 'bg-warning' : 'bg-destructive'}`}></span>
+            <StatusRing level={statusViz.level} colorClass={statusViz.fillClass} />
             <span className={statusBarbearia.className}>{statusBarbearia.texto}</span>
           </div>
         </div>
       </CardHeader>
+
 
       <CardContent>
         {loading ? (
