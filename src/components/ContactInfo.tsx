@@ -74,7 +74,14 @@ export default function ContactInfo() {
             variant="outline"
             size="sm"
             className="w-full border-primary/30 hover:bg-primary/10 hover:border-primary/50"
-            onClick={() => window.open(storeInfo.maps_url!, '_blank')}
+            onClick={() => {
+              let url = storeInfo.maps_url!;
+              // Garante que a URL tenha protocolo
+              if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+              }
+              window.open(url, '_blank');
+            }}
           >
             <Map className="h-4 w-4 mr-2" />
             Ver no Google Maps
