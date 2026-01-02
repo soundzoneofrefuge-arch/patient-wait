@@ -195,6 +195,11 @@ export default function Loja() {
 
   // Adicionar ao carrinho
   const handleAddToCart = (produto: Produto) => {
+    if (produto.quantidade === 0) {
+      toast.error("Produto sem estoque disponível");
+      return;
+    }
+
     addItem({
       id: produto.id,
       nome: produto.nome,
@@ -221,6 +226,11 @@ export default function Loja() {
 
   // Aumentar quantidade
   const handleIncreaseQuantity = (produto: Produto) => {
+    if (produto.quantidade === 0) {
+      toast.error("Produto sem estoque disponível");
+      return;
+    }
+
     const currentQty = getItemQuantity(produto.id);
     if (currentQty === 0) {
       handleAddToCart(produto);
@@ -439,8 +449,11 @@ export default function Loja() {
                     <p className="text-lg font-bold text-primary">
                       {produto.preco}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {produto.quantidade} {produto.quantidade === 1 ? "Unidade" : "Unidades"}
+                    <p className={`text-xs ${produto.quantidade === 0 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                      {produto.quantidade === 0 
+                        ? "Esgotado" 
+                        : `${produto.quantidade} ${produto.quantidade === 1 ? "Unidade" : "Unidades"}`
+                      }
                     </p>
                     
                     {/* Contador de quantidade - canto inferior direito */}
@@ -465,6 +478,7 @@ export default function Loja() {
                         variant="ghost"
                         onClick={() => handleIncreaseQuantity(produto)}
                         className="h-8 w-8 rounded-full hover:bg-primary/20 hover:text-primary"
+                        disabled={produto.quantidade === 0}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
