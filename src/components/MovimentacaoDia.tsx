@@ -63,7 +63,7 @@ const MovimentacaoDia = () => {
         ) : (
           <div className="relative">
             {/* Barbershop SVG Illustration */}
-            <svg viewBox="0 0 300 250" className="w-full h-48">
+            <svg viewBox="0 0 300 250" className="w-full h-32">
               {/* Background - Floor */}
               <rect x="0" y="200" width="300" height="50" fill="#1a1a1a" />
               <rect x="0" y="200" width="300" height="3" fill="#333" />
@@ -220,35 +220,23 @@ const MovimentacaoDia = () => {
                 <rect x="127" y="167" width="46" height="14" rx="1" fill="#a16207" />
               </g>
               
-              {/* Among Us style animated clients */}
+              {/* Simple stick figure clients */}
               {/* Client 1 - Orange */}
               <g className="animate-bounce" style={{ animationDuration: '2s', animationDelay: '0s' } as CSSProperties}>
-                <ellipse cx="135" cy="178" rx="8" ry="12" fill="#f97316" />
-                <ellipse cx="139" cy="174" rx="5" ry="3.5" fill="#87CEEB" opacity="0.9" />
-                <ellipse cx="140" cy="173" rx="2" ry="1.2" fill="white" opacity="0.5" />
-                <rect x="124" y="170" width="4" height="10" rx="1.5" fill="#ea580c" />
-                <ellipse cx="132" cy="189" rx="3" ry="2" fill="#f97316" />
-                <ellipse cx="138" cy="189" rx="3" ry="2" fill="#f97316" />
+                <circle cx="135" cy="168" r="5" fill="#f97316" />
+                <rect x="132" y="173" width="6" height="10" rx="2" fill="#f97316" />
               </g>
               
-              {/* Client 2 - Cyan */}
+              {/* Client 2 - Yellow */}
               <g className="animate-bounce" style={{ animationDuration: '2.2s', animationDelay: '0.3s' } as CSSProperties}>
-                <ellipse cx="150" cy="178" rx="8" ry="12" fill="#06b6d4" />
-                <ellipse cx="154" cy="174" rx="5" ry="3.5" fill="#87CEEB" opacity="0.9" />
-                <ellipse cx="155" cy="173" rx="2" ry="1.2" fill="white" opacity="0.5" />
-                <rect x="139" y="170" width="4" height="10" rx="1.5" fill="#0891b2" />
-                <ellipse cx="147" cy="189" rx="3" ry="2" fill="#06b6d4" />
-                <ellipse cx="153" cy="189" rx="3" ry="2" fill="#06b6d4" />
+                <circle cx="150" cy="168" r="5" fill="#eab308" />
+                <rect x="147" y="173" width="6" height="10" rx="2" fill="#eab308" />
               </g>
               
               {/* Client 3 - Lime */}
               <g className="animate-bounce" style={{ animationDuration: '1.8s', animationDelay: '0.6s' } as CSSProperties}>
-                <ellipse cx="165" cy="178" rx="8" ry="12" fill="#84cc16" />
-                <ellipse cx="169" cy="174" rx="5" ry="3.5" fill="#87CEEB" opacity="0.9" />
-                <ellipse cx="170" cy="173" rx="2" ry="1.2" fill="white" opacity="0.5" />
-                <rect x="154" y="170" width="4" height="10" rx="1.5" fill="#65a30d" />
-                <ellipse cx="162" cy="189" rx="3" ry="2" fill="#84cc16" />
-                <ellipse cx="168" cy="189" rx="3" ry="2" fill="#84cc16" />
+                <circle cx="165" cy="168" r="5" fill="#84cc16" />
+                <rect x="162" y="173" width="6" height="10" rx="2" fill="#84cc16" />
               </g>
               
               {/* Decorative elements */}
