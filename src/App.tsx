@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { Dashboard } from "@/pages/Dashboard";
@@ -6,6 +5,7 @@ import Auth from "@/pages/Auth";
 import ResetPassword from "@/pages/ResetPassword";
 import Booking from "@/pages/Booking";
 import Loja from "@/pages/Loja";
+import Checkout from "@/pages/Checkout";
 import BookingConfirmation from "@/pages/BookingConfirmation";
 import Reschedule from "@/pages/Reschedule";
 import RescheduleConfirmation from "@/pages/RescheduleConfirmation";
@@ -15,6 +15,7 @@ import { Toaster } from "sonner";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from '@supabase/supabase-js';
+import { CartProvider } from "@/hooks/useCart";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,24 +65,27 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterComponent>
-        <div className="min-h-screen dark">
-          <Routes>
-            <Route path="/" element={<Booking />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/booking-confirmation" element={<BookingConfirmation />} />
-            <Route path="/reschedule" element={<Reschedule />} />
-            <Route path="/reschedule-confirmation" element={<RescheduleConfirmation />} />
-            <Route path="/cancel" element={<Cancel />} />
-            <Route path="/cancel-confirmation" element={<CancelConfirmation />} />
-            <Route path="/loja" element={<Loja />} />
-            <Route path="*" element={<Booking />} />
-          </Routes>
-        </div>
-        <Toaster position="top-right" theme="dark" />
-      </RouterComponent>
+      <CartProvider>
+        <RouterComponent>
+          <div className="min-h-screen dark">
+            <Routes>
+              <Route path="/" element={<Booking />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+              <Route path="/reschedule" element={<Reschedule />} />
+              <Route path="/reschedule-confirmation" element={<RescheduleConfirmation />} />
+              <Route path="/cancel" element={<Cancel />} />
+              <Route path="/cancel-confirmation" element={<CancelConfirmation />} />
+              <Route path="/loja" element={<Loja />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="*" element={<Booking />} />
+            </Routes>
+          </div>
+          <Toaster position="top-right" theme="dark" />
+        </RouterComponent>
+      </CartProvider>
     </QueryClientProvider>
   );
 };
