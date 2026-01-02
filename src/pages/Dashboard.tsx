@@ -71,6 +71,18 @@ export const Dashboard = () => {
           </p>
         </div>
 
+        {/* Botão Cadastrar Produtos */}
+        <div className="mb-8 flex justify-center">
+          <Button
+            onClick={() => navigate('/loja')}
+            size="lg"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xl px-10 py-6 h-auto font-bold"
+          >
+            <Store className="mr-3 h-6 w-6" />
+            CADASTRAR PRODUTOS
+          </Button>
+        </div>
+
         {/* Cards de Estatísticas */}
         <StatsCards />
 
