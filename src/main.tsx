@@ -4,8 +4,8 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// Register service worker for PWA
-if ('serviceWorker' in navigator) {
+// Register service worker for PWA (somente em produção para não quebrar HMR/cache no preview)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     const basePath = document.querySelector('base')?.href || window.location.origin;
     const swPath = new URL('sw.js', basePath).href;
@@ -110,6 +110,7 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
 
 console.log("main.tsx loaded");
 
