@@ -8,6 +8,8 @@ import { StatsCards } from "@/components/StatsCards";
 import { ChartsSection } from "@/components/ChartsSection";
 import { PainelAgendamentos } from "@/components/PainelAgendamentos";
 import { QuadroEfetivados } from "@/components/QuadroEfetivados";
+import { Button } from "@/components/ui/button";
+import { Store } from "lucide-react";
 
 export const Dashboard = () => {
   const navigate = useNavigate();
