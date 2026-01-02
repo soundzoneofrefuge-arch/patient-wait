@@ -91,56 +91,76 @@ function Barber({ color, flip }: { color: string; flip?: boolean }) {
   );
 }
 
-// Cliente sentado (pessoa simplificada)
-function ClienteSentado({ toneClass }: { toneClass: string }) {
+// Cliente sentado (pessoa simplificada) com balão de conversa
+function ClienteSentado({ toneClass, showBubble }: { toneClass: string; showBubble?: boolean }) {
   return (
     <svg
-      viewBox="0 0 24 32"
-      className="w-6 h-8 drop-shadow-sm"
+      viewBox="0 0 32 40"
+      className="w-8 h-10 drop-shadow-sm"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
+      {/* Balão de conversa */}
+      {showBubble && (
+        <>
+          <ellipse cx="24" cy="6" rx="6" ry="4" className="fill-background/90" />
+          <path d="M20 8 L18 12 L22 9 Z" className="fill-background/90" />
+          <circle cx="22" cy="6" r="0.8" className="fill-muted-foreground/60" />
+          <circle cx="24" cy="6" r="0.8" className="fill-muted-foreground/60" />
+          <circle cx="26" cy="6" r="0.8" className="fill-muted-foreground/60" />
+        </>
+      )}
       {/* Cabeça */}
-      <circle cx="12" cy="6" r="5" className={toneClass} />
+      <circle cx="12" cy="14" r="5" className={toneClass} />
       {/* Olhos */}
-      <circle cx="10" cy="5" r="0.8" className="fill-background/80" />
-      <circle cx="14" cy="5" r="0.8" className="fill-background/80" />
+      <circle cx="10" cy="13" r="0.8" className="fill-background/80" />
+      <circle cx="14" cy="13" r="0.8" className="fill-background/80" />
       
       {/* Corpo sentado */}
-      <path d="M6 12 L6 22 L18 22 L18 12 Q12 10 6 12" className={toneClass} />
+      <path d="M6 20 L6 30 L18 30 L18 20 Q12 18 6 20" className={toneClass} />
       
       {/* Pernas dobradas */}
-      <rect x="6" y="22" width="5" height="8" rx="2" className={toneClass} />
-      <rect x="13" y="22" width="5" height="8" rx="2" className={toneClass} />
+      <rect x="6" y="30" width="5" height="8" rx="2" className={toneClass} />
+      <rect x="13" y="30" width="5" height="8" rx="2" className={toneClass} />
     </svg>
   );
 }
 
-// Cliente em pé / andando
-function ClienteAndando({ toneClass, walking }: { toneClass: string; walking?: boolean }) {
+// Cliente em pé / andando com balão de conversa
+function ClienteAndando({ toneClass, walking, showBubble }: { toneClass: string; walking?: boolean; showBubble?: boolean }) {
   return (
     <svg
-      viewBox="0 0 24 40"
-      className={cn("w-5 h-8 drop-shadow-sm", walking && "animate-pulse")}
+      viewBox="0 0 32 48"
+      className={cn("w-6 h-10 drop-shadow-sm", walking && "animate-pulse")}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
+      {/* Balão de conversa */}
+      {showBubble && (
+        <>
+          <ellipse cx="24" cy="6" rx="6" ry="4" className="fill-background/90" />
+          <path d="M20 8 L18 12 L22 9 Z" className="fill-background/90" />
+          <circle cx="22" cy="6" r="0.8" className="fill-muted-foreground/60" />
+          <circle cx="24" cy="6" r="0.8" className="fill-muted-foreground/60" />
+          <circle cx="26" cy="6" r="0.8" className="fill-muted-foreground/60" />
+        </>
+      )}
       {/* Cabeça */}
-      <circle cx="12" cy="6" r="5" className={toneClass} />
+      <circle cx="12" cy="14" r="5" className={toneClass} />
       {/* Olhos */}
-      <circle cx="10" cy="5" r="0.7" className="fill-background/80" />
-      <circle cx="14" cy="5" r="0.7" className="fill-background/80" />
+      <circle cx="10" cy="13" r="0.7" className="fill-background/80" />
+      <circle cx="14" cy="13" r="0.7" className="fill-background/80" />
       
       {/* Corpo */}
-      <path d="M7 12 L7 26 L17 26 L17 12 Q12 10 7 12" className={toneClass} />
+      <path d="M7 20 L7 34 L17 34 L17 20 Q12 18 7 20" className={toneClass} />
       
       {/* Braços */}
-      <rect x="3" y="14" width="4" height="10" rx="2" className={toneClass} />
-      <rect x="17" y="14" width="4" height="10" rx="2" className={toneClass} />
+      <rect x="3" y="22" width="4" height="10" rx="2" className={toneClass} />
+      <rect x="17" y="22" width="4" height="10" rx="2" className={toneClass} />
       
       {/* Pernas */}
-      <rect x="8" y="26" width="4" height="12" rx="2" className={toneClass} />
-      <rect x="14" y="26" width="4" height="12" rx="2" className={toneClass} />
+      <rect x="8" y="34" width="4" height="12" rx="2" className={toneClass} />
+      <rect x="14" y="34" width="4" height="12" rx="2" className={toneClass} />
     </svg>
   );
 }
@@ -190,21 +210,27 @@ function Espelho() {
   );
 }
 
-// Poste de barbearia (barber pole)
+// Poste de barbearia (barber pole) - vermelho, branco e azul
 function BarberPole() {
   return (
     <svg viewBox="0 0 16 50" className="w-4 h-12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="0" width="12" height="50" rx="2" className="fill-foreground/20" />
-      <rect x="3" y="2" width="10" height="46" rx="1" className="fill-background/80" />
-      {/* Listras */}
-      <path d="M3 8 L13 2 L13 8 L3 14 Z" className="fill-destructive" />
-      <path d="M3 20 L13 14 L13 20 L3 26 Z" className="fill-destructive" />
-      <path d="M3 32 L13 26 L13 32 L3 38 Z" className="fill-destructive" />
-      <path d="M3 44 L13 38 L13 44 L3 48 Z" className="fill-destructive" />
+      {/* Moldura */}
+      <rect x="2" y="0" width="12" height="50" rx="2" className="fill-muted-foreground/40" />
+      {/* Fundo branco */}
+      <rect x="3" y="2" width="10" height="46" rx="1" fill="white" />
+      {/* Listras vermelhas */}
+      <path d="M3 6 L13 2 L13 6 L3 10 Z" fill="#dc2626" />
+      <path d="M3 18 L13 14 L13 18 L3 22 Z" fill="#dc2626" />
+      <path d="M3 30 L13 26 L13 30 L3 34 Z" fill="#dc2626" />
+      <path d="M3 42 L13 38 L13 42 L3 46 Z" fill="#dc2626" />
       {/* Listras azuis */}
-      <path d="M3 14 L13 8 L13 14 L3 20 Z" className="fill-primary" />
-      <path d="M3 26 L13 20 L13 26 L3 32 Z" className="fill-primary" />
-      <path d="M3 38 L13 32 L13 38 L3 44 Z" className="fill-primary" />
+      <path d="M3 10 L13 6 L13 10 L3 14 Z" fill="#2563eb" />
+      <path d="M3 22 L13 18 L13 22 L3 26 Z" fill="#2563eb" />
+      <path d="M3 34 L13 30 L13 34 L3 38 Z" fill="#2563eb" />
+      <path d="M3 46 L13 42 L13 46 L3 48 Z" fill="#2563eb" />
+      {/* Tampa superior e inferior */}
+      <rect x="1" y="0" width="14" height="3" rx="1" className="fill-muted-foreground/60" />
+      <rect x="1" y="47" width="14" height="3" rx="1" className="fill-muted-foreground/60" />
     </svg>
   );
 }
@@ -337,114 +363,8 @@ export default function MovimentacaoDia() {
           </div>
         ) : (
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Ilustração da barbearia */}
-            <div className="relative rounded-xl border border-border/30 overflow-hidden min-h-[260px] bg-gradient-to-br from-secondary/40 via-background to-secondary/20">
-              {/* Parede de fundo com textura */}
-              <div className="absolute inset-0 opacity-30">
-                <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-muted/50 to-transparent" />
-              </div>
-              
-              {/* Chão */}
-              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-muted/60 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 h-2 bg-muted-foreground/20" />
-
-              {/* Decoração - Barber Poles */}
-              <div className="absolute top-4 left-3">
-                <BarberPole />
-              </div>
-              <div className="absolute top-4 right-3">
-                <BarberPole />
-              </div>
-
-              {/* Espelhos */}
-              <div className="absolute top-2 left-[22%]">
-                <Espelho />
-              </div>
-              <div className="absolute top-2 right-[22%]">
-                <Espelho />
-              </div>
-
-              {/* Cadeiras de barbeiro */}
-              <div className="absolute top-14 left-[18%] -translate-x-1/2">
-                <BarberChair />
-              </div>
-              <div className="absolute top-14 right-[18%] translate-x-1/2">
-                <BarberChair className="scale-x-[-1]" />
-              </div>
-
-              {/* Barbeiros */}
-              <div className="absolute top-16 left-[30%]">
-                <div className="crew-bob">
-                  <Barber color="fill-warning" />
-                </div>
-              </div>
-              <div className="absolute top-16 right-[30%]">
-                <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
-                  <Barber color="fill-primary" flip />
-                </div>
-              </div>
-
-              {/* Banco de espera */}
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[80%]">
-                <BancoEspera />
-              </div>
-
-              {/* Clientes sentados no banco */}
-              {Array.from({ length: clientesSentados }).map((_, i) => (
-                <div
-                  key={`sentado-${i}`}
-                  className="absolute bottom-16"
-                  style={{ left: `${18 + i * 18}%` }}
-                >
-                  <div className="crew-bob" style={{ animationDelay: `${i * 0.2}s` }}>
-                    <ClienteSentado toneClass={clienteTones[i % clienteTones.length]} />
-                  </div>
-                </div>
-              ))}
-
-              {/* Clientes em pé / andando */}
-              {Array.from({ length: clientesEmPe }).map((_, i) => {
-                const spot = wanderSpots[i % wanderSpots.length];
-                const tone = clienteTones[(i + clientesSentados) % clienteTones.length];
-
-                return (
-                  <div
-                    key={`pe-${i}`}
-                    className="absolute"
-                    style={{ top: spot.top, left: spot.left }}
-                  >
-                    <div
-                      className="crew-wander"
-                      style={
-                        {
-                          "--dx": `${spot.dx}px`,
-                          "--dy": `${spot.dy}px`,
-                          "--dur": `${spot.dur}s`,
-                          animationDelay: `${spot.delay}s`,
-                        } as CSSProperties
-                      }
-                    >
-                      <div className="crew-bob" style={{ animationDelay: `${spot.delay}s` }}>
-                        <ClienteAndando toneClass={tone} walking />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Status badge */}
-              <div className="absolute top-3 right-12 text-xs font-semibold px-3 py-1.5 rounded-full bg-background/80 border border-border/50 shadow-sm">
-                <span className={statusBarbearia.className}>{statusBarbearia.texto}</span>
-              </div>
-
-              {/* Total */}
-              <div className="absolute bottom-3 left-3 text-xs font-medium text-muted-foreground bg-background/60 px-2 py-1 rounded">
-                {totalAgendamentos} {totalAgendamentos === 1 ? "agendamento" : "agendamentos"} hoje
-              </div>
-            </div>
-
             {/* Gráfico de horários populares */}
-            <div className="space-y-3">
+            <div className="space-y-3 min-h-[260px] flex flex-col">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span className="font-medium flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -493,7 +413,7 @@ export default function MovimentacaoDia() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-6 text-xs text-muted-foreground pt-3 border-t border-border/30">
+              <div className="flex items-center gap-6 text-xs text-muted-foreground pt-3 border-t border-border/30 mt-auto">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-gradient-to-t from-destructive to-destructive/70 rounded-sm" />
                   <span>Horário de pico</span>
@@ -501,6 +421,118 @@ export default function MovimentacaoDia() {
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-gradient-to-t from-primary to-primary/70 rounded-sm" />
                   <span>Normal</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ilustração da barbearia */}
+            <div className="relative">
+              {/* Status badge - fora do quadro, canto superior direito */}
+              <div className="absolute -top-7 right-0 flex items-center gap-2 text-xs font-semibold">
+                <svg viewBox="0 0 16 16" className="w-4 h-4">
+                  <circle cx="8" cy="8" r="7" fill="transparent" stroke="currentColor" strokeWidth="1" className="text-border" />
+                  <path d="M8 1 A7 7 0 0 1 15 8 L8 8 Z" className="fill-success" />
+                </svg>
+                <span className={statusBarbearia.className}>{statusBarbearia.texto}</span>
+              </div>
+
+              <div className="rounded-xl border border-border/30 overflow-hidden min-h-[260px] bg-gradient-to-br from-secondary/40 via-background to-secondary/20 relative">
+                {/* Parede de fundo com textura */}
+                <div className="absolute inset-0 opacity-30">
+                  <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-muted/50 to-transparent" />
+                </div>
+                
+                {/* Chão */}
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-muted/60 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-2 bg-muted-foreground/20" />
+
+                {/* Decoração - Barber Poles */}
+                <div className="absolute top-4 left-3">
+                  <BarberPole />
+                </div>
+                <div className="absolute top-4 right-3">
+                  <BarberPole />
+                </div>
+
+                {/* Espelhos */}
+                <div className="absolute top-2 left-[22%]">
+                  <Espelho />
+                </div>
+                <div className="absolute top-2 right-[22%]">
+                  <Espelho />
+                </div>
+
+                {/* Cadeiras de barbeiro */}
+                <div className="absolute top-14 left-[18%] -translate-x-1/2">
+                  <BarberChair />
+                </div>
+                <div className="absolute top-14 right-[18%] translate-x-1/2">
+                  <BarberChair className="scale-x-[-1]" />
+                </div>
+
+                {/* Barbeiros */}
+                <div className="absolute top-16 left-[30%]">
+                  <div className="crew-bob">
+                    <Barber color="fill-warning" />
+                  </div>
+                </div>
+                <div className="absolute top-16 right-[30%]">
+                  <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
+                    <Barber color="fill-primary" flip />
+                  </div>
+                </div>
+
+                {/* Banco de espera */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[80%]">
+                  <BancoEspera />
+                </div>
+
+                {/* Clientes sentados no banco */}
+                {Array.from({ length: clientesSentados }).map((_, i) => (
+                  <div
+                    key={`sentado-${i}`}
+                    className="absolute bottom-14"
+                    style={{ left: `${18 + i * 18}%` }}
+                  >
+                    <div className="crew-bob" style={{ animationDelay: `${i * 0.2}s` }}>
+                      <ClienteSentado toneClass={clienteTones[i % clienteTones.length]} showBubble={i % 2 === 0} />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Clientes em pé / andando */}
+                {Array.from({ length: clientesEmPe }).map((_, i) => {
+                  const spot = wanderSpots[i % wanderSpots.length];
+                  const tone = clienteTones[(i + clientesSentados) % clienteTones.length];
+
+                  return (
+                    <div
+                      key={`pe-${i}`}
+                      className="absolute"
+                      style={{ top: spot.top, left: spot.left }}
+                    >
+                      <div
+                        className="crew-wander"
+                        style={
+                          {
+                            "--dx": `${spot.dx}px`,
+                            "--dy": `${spot.dy}px`,
+                            "--dur": `${spot.dur}s`,
+                            animationDelay: `${spot.delay}s`,
+                          } as CSSProperties
+                        }
+                      >
+                        <div className="crew-bob" style={{ animationDelay: `${spot.delay}s` }}>
+                          <ClienteAndando toneClass={tone} walking showBubble={i % 3 === 0} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Total */}
+                <div className="absolute bottom-3 left-3 text-xs font-medium text-muted-foreground bg-background/60 px-2 py-1 rounded">
+                  {totalAgendamentos} {totalAgendamentos === 1 ? "agendamento" : "agendamentos"} hoje
                 </div>
               </div>
             </div>
