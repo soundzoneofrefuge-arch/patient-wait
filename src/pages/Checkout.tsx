@@ -14,6 +14,8 @@ import {
   MapPin,
 } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
 import {
   AlertDialog,
@@ -37,7 +39,41 @@ export default function Checkout() {
     setShowConfirmation(true);
   };
 
-  const handleConfirmRedirect = () => {
+  const decrementStock = async () => {
+    try {
+      // Decrementar estoque para cada item do carrinho
+      for (const item of items) {
+        const { data: produto, error: fetchError } = await supabase
+          .from("produtos_loja")
+          .select("quantidade")
+          .eq("id", item.id)
+          .maybeSingle();
+
+        if (fetchError) {
+          console.error("Erro ao buscar produto:", fetchError);
+          continue;
+        }
+
+        if (produto) {
+          const novaQuantidade = Math.max(0, produto.quantidade - item.quantidade);
+          
+          const { error: updateError } = await supabase
+            .from("produtos_loja")
+            .update({ quantidade: novaQuantidade })
+            .eq("id", item.id);
+
+          if (updateError) {
+            console.error("Erro ao atualizar estoque:", updateError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao decrementar estoque:", error);
+    }
+  };
+
+  const handleConfirmRedirect = async () => {
+    await decrementStock();
     clearCart();
     window.open(CHECKOUT_URL, "_blank");
     navigate("/loja");
