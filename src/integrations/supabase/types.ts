@@ -139,6 +139,7 @@ export type Database = {
           opening_time: string
           phone: string | null
           slot_interval_minutes: number
+          url_insta: string | null
         }
         Insert: {
           address?: string | null
@@ -153,6 +154,7 @@ export type Database = {
           opening_time?: string
           phone?: string | null
           slot_interval_minutes?: number
+          url_insta?: string | null
         }
         Update: {
           address?: string | null
@@ -167,6 +169,7 @@ export type Database = {
           opening_time?: string
           phone?: string | null
           slot_interval_minutes?: number
+          url_insta?: string | null
         }
         Relationships: []
       }
