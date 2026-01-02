@@ -19,6 +19,7 @@ interface Produto {
   foto_url: string | null;
   ativo: boolean;
   ordem: number;
+  quantidade: number;
 }
 
 export default function Loja() {
@@ -31,6 +32,7 @@ export default function Loja() {
   // Form states para admin
   const [novoNome, setNovoNome] = useState("");
   const [novoPreco, setNovoPreco] = useState("");
+  const [novaQuantidade, setNovaQuantidade] = useState("");
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -143,7 +145,8 @@ export default function Loja() {
           nome: novoNome.trim(),
           preco: novoPreco.trim(),
           foto_url: fotoUrl,
-          ordem: produtos.length
+          ordem: produtos.length,
+          quantidade: parseInt(novaQuantidade) || 0
         })
         .select()
         .single();
@@ -153,6 +156,7 @@ export default function Loja() {
       setProdutos([...produtos, data]);
       setNovoNome("");
       setNovoPreco("");
+      setNovaQuantidade("");
       setSelectedFile(null);
       setPreviewUrl(null);
       toast.success("Produto adicionado!");
@@ -280,7 +284,7 @@ export default function Loja() {
                 Adicionar Produto
               </h2>
               
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome do Produto</Label>
                   <Input
@@ -299,6 +303,19 @@ export default function Loja() {
                     value={novoPreco}
                     onChange={(e) => setNovoPreco(e.target.value)}
                     placeholder="Ex: R$ 45,00"
+                    className="bg-input/50 border-border/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="quantidade">Quantidade</Label>
+                  <Input
+                    id="quantidade"
+                    type="number"
+                    min="0"
+                    value={novaQuantidade}
+                    onChange={(e) => setNovaQuantidade(e.target.value)}
+                    placeholder="Ex: 10"
                     className="bg-input/50 border-border/50"
                   />
                 </div>
@@ -421,6 +438,9 @@ export default function Loja() {
                     </h3>
                     <p className="text-lg font-bold text-primary">
                       {produto.preco}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {produto.quantidade} {produto.quantidade === 1 ? "Unidade" : "Unidades"}
                     </p>
                     
                     {/* Contador de quantidade - canto inferior direito */}
