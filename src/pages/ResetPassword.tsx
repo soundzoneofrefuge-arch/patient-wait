@@ -107,16 +107,6 @@ export default function ResetPassword() {
     processRecoveryToken();
   }, []);
 
-      } catch (e) {
-        console.error("Erro ao processar token:", e);
-        toast.error("Erro ao processar link de recuperação.");
-      } finally {
-        setIsVerifying(false);
-      }
-    };
-
-    processRecoveryToken();
-  }, []);
 
 
   async function handleResetPassword() {
