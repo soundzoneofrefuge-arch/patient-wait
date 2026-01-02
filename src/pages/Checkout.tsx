@@ -239,7 +239,13 @@ export default function Checkout() {
                   </span>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <div className="bg-destructive/10 border border-destructive/30 p-3 rounded-lg mt-2">
+                <p className="text-destructive font-bold text-sm">ATENÇÃO!</p>
+                <p className="text-destructive/90 text-sm">
+                  Não realizamos entregas. Retirada somente em nossa loja.
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
                 Você será redirecionado para a página de pagamento.
               </p>
             </AlertDialogDescription>
