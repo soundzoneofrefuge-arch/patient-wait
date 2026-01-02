@@ -381,13 +381,22 @@ export default function MovimentacaoDia() {
   return (
     <Card className="bg-card/95 backdrop-blur-sm border-primary/20 overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Scissors className="h-5 w-5 text-primary" />
-          Movimentação do Dia
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Acompanhe a quantidade de agendamentos do dia
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Scissors className="h-5 w-5 text-primary" />
+              Movimentação do Dia
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Acompanhe a quantidade de agendamentos do dia
+            </p>
+          </div>
+          {/* Status badge - canto superior direito do card */}
+          <div className="flex items-center gap-1.5 text-xs font-semibold bg-background/70 backdrop-blur-sm rounded-full px-2.5 py-1 border border-border/30">
+            <span className={`w-2 h-2 rounded-full ${statusBarbearia.className === 'text-success' ? 'bg-success' : statusBarbearia.className === 'text-warning' ? 'bg-warning' : 'bg-destructive'}`}></span>
+            <span className={statusBarbearia.className}>{statusBarbearia.texto}</span>
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent>
@@ -404,14 +413,6 @@ export default function MovimentacaoDia() {
             {/* Ilustração da barbearia - AGORA À ESQUERDA */}
             <div className="relative">
               <div className="rounded-xl border border-border/30 overflow-hidden min-h-[260px] bg-gradient-to-br from-secondary/40 via-background to-secondary/20 relative">
-                {/* Status badge - canto superior direito DENTRO do quadro */}
-                <div className="absolute top-2 right-2 z-20 flex items-center gap-1.5 text-xs font-semibold bg-background/70 backdrop-blur-sm rounded-full px-2 py-1">
-                  <svg viewBox="0 0 16 16" className="w-3.5 h-3.5">
-                    <circle cx="8" cy="8" r="7" fill="transparent" stroke="currentColor" strokeWidth="1" className="text-border" />
-                    <path d="M8 1 A7 7 0 0 1 15 8 L8 8 Z" className="fill-success" />
-                  </svg>
-                  <span className={statusBarbearia.className}>{statusBarbearia.texto}</span>
-                </div>
                 {/* Parede de fundo com textura */}
                 <div className="absolute inset-0 opacity-30">
                   <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-muted/50 to-transparent" />
