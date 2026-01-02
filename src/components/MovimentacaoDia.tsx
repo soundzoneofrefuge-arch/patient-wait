@@ -220,23 +220,44 @@ const MovimentacaoDia = () => {
                 <rect x="127" y="167" width="46" height="14" rx="1" fill="#a16207" />
               </g>
               
-              {/* Simple stick figure clients */}
-              {/* Client 1 - Orange */}
-              <g className="animate-bounce" style={{ animationDuration: '2s', animationDelay: '0s' } as CSSProperties}>
-                <circle cx="135" cy="168" r="5" fill="#f97316" />
-                <rect x="132" y="173" width="6" height="10" rx="2" fill="#f97316" />
+              {/* Clients sitting on bench (2 sitting) */}
+              {/* Client 1 - Orange - sitting */}
+              <g>
+                <circle cx="138" cy="160" r="5" fill="#f97316" />
+                <rect x="135" y="165" width="6" height="8" rx="2" fill="#f97316" />
+                {/* Speech bubble */}
+                <g>
+                  <ellipse cx="148" cy="150" rx="8" ry="5" fill="white" opacity="0.9" />
+                  <polygon points="142,154 145,152 143,156" fill="white" opacity="0.9" />
+                  <text x="148" y="152" textAnchor="middle" fontSize="4" fill="#333">...</text>
+                </g>
               </g>
               
-              {/* Client 2 - Yellow */}
-              <g className="animate-bounce" style={{ animationDuration: '2.2s', animationDelay: '0.3s' } as CSSProperties}>
-                <circle cx="150" cy="168" r="5" fill="#eab308" />
-                <rect x="147" y="173" width="6" height="10" rx="2" fill="#eab308" />
+              {/* Client 2 - Yellow - sitting */}
+              <g>
+                <circle cx="162" cy="160" r="5" fill="#eab308" />
+                <rect x="159" y="165" width="6" height="8" rx="2" fill="#eab308" />
               </g>
               
-              {/* Client 3 - Lime */}
-              <g className="animate-bounce" style={{ animationDuration: '1.8s', animationDelay: '0.6s' } as CSSProperties}>
-                <circle cx="165" cy="168" r="5" fill="#84cc16" />
-                <rect x="162" y="173" width="6" height="10" rx="2" fill="#84cc16" />
+              {/* Clients walking around (2 walking) */}
+              {/* Client 3 - Cyan - walking left side */}
+              <g>
+                <animateTransform attributeName="transform" type="translate" values="0,0; 8,0; 0,0; -8,0; 0,0" dur="4s" repeatCount="indefinite" />
+                <circle cx="45" cy="180" r="5" fill="#06b6d4" />
+                <rect x="42" y="185" width="6" height="10" rx="2" fill="#06b6d4" />
+                {/* Speech bubble */}
+                <g>
+                  <ellipse cx="55" cy="170" rx="8" ry="5" fill="white" opacity="0.9" />
+                  <polygon points="49,174 52,172 50,176" fill="white" opacity="0.9" />
+                  <text x="55" y="172" textAnchor="middle" fontSize="4" fill="#333">Oi!</text>
+                </g>
+              </g>
+              
+              {/* Client 4 - Pink - walking right side */}
+              <g>
+                <animateTransform attributeName="transform" type="translate" values="0,0; -8,0; 0,0; 8,0; 0,0" dur="3.5s" repeatCount="indefinite" />
+                <circle cx="255" cy="180" r="5" fill="#ec4899" />
+                <rect x="252" y="185" width="6" height="10" rx="2" fill="#ec4899" />
               </g>
               
               {/* Decorative elements */}
@@ -253,9 +274,9 @@ const MovimentacaoDia = () => {
               <line x1="150" y1="25" x2="155" y2="28" stroke="white" strokeWidth="1" />
             </svg>
             
-            {/* Movement badge - positioned bottom right, below SVG */}
+            {/* Movement badge - positioned below SVG, right aligned */}
             {movement && (
-              <div className="flex justify-end mt-1">
+              <div className="flex justify-end -mt-1">
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${movement.bg} border border-current/20 shadow-lg`}>
                   <MovementIcon className={`h-3.5 w-3.5 ${movement.color}`} />
                   <span className={`text-xs font-medium ${movement.color}`}>{movement.label}</span>
