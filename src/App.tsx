@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { Dashboard } from "@/pages/Dashboard";
 import Auth from "@/pages/Auth";
+import ResetPassword from "@/pages/ResetPassword";
 import Booking from "@/pages/Booking";
 import BookingConfirmation from "@/pages/BookingConfirmation";
 import Reschedule from "@/pages/Reschedule";
@@ -68,6 +69,7 @@ const App = () => {
             <Route path="/" element={<Booking />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
             <Route path="/reschedule" element={<Reschedule />} />
             <Route path="/reschedule-confirmation" element={<RescheduleConfirmation />} />
@@ -83,3 +85,4 @@ const App = () => {
 };
 
 export default App;
+
