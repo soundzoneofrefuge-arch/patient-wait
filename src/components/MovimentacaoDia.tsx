@@ -45,13 +45,13 @@ const MovimentacaoDia = () => {
   const MovementIcon = movement?.icon || Minus;
 
   return (
-    <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <Scissors className="h-5 w-5 text-primary" />
+    <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden h-fit">
+      <CardHeader className="pb-1 pt-3">
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+          <Scissors className="h-4 w-4 text-primary" />
           Movimentação do Dia
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Acompanhe a quantidade de agendamentos
         </p>
       </CardHeader>
@@ -285,36 +285,36 @@ const MovimentacaoDia = () => {
             )}
             
             {/* Stats footer */}
-            <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-border/30">
-              <span className="text-2xl font-bold text-primary">{data?.total || 0}</span>
-              <span className="text-sm text-muted-foreground">agendamentos hoje</span>
+            <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t border-border/30">
+              <span className="text-xl font-bold text-primary">{data?.total || 0}</span>
+              <span className="text-xs text-muted-foreground">agendamentos hoje</span>
             </div>
             
-            {/* Popular hours bar chart */}
-            {data?.byHour && Object.keys(data.byHour).length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs text-muted-foreground mb-2">Horários mais procurados:</p>
-                <div className="flex items-end gap-1 h-12">
-                  {Array.from({ length: 12 }, (_, i) => {
-                    const hour = (9 + i).toString();
-                    const count = data.byHour[hour] || 0;
-                    const maxCount = Math.max(...Object.values(data.byHour), 1);
-                    const height = count > 0 ? Math.max((count / maxCount) * 100, 15) : 8;
-                    
-                    return (
-                      <div key={hour} className="flex-1 flex flex-col items-center gap-0.5">
-                        <div
-                          className={`w-full rounded-t transition-all duration-500 ${count > 0 ? 'bg-primary' : 'bg-muted/30'}`}
-                          style={{ height: `${height}%` }}
-                          title={`${hour}h: ${count} agendamentos`}
-                        />
-                        <span className="text-[9px] text-muted-foreground">{9 + i}h</span>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* Popular hours bar chart - always show */}
+            <div className="mt-3">
+              <p className="text-xs text-muted-foreground mb-2">Horários mais procurados:</p>
+              <div className="flex items-end gap-1 h-10">
+                {Array.from({ length: 12 }, (_, i) => {
+                  const hourNum = 9 + i;
+                  const hourKey = hourNum.toString().padStart(2, '0'); // "09", "10", "11"...
+                  const hourKeyAlt = hourNum.toString(); // "9", "10", "11"... fallback
+                  const count = data?.byHour?.[hourKey] || data?.byHour?.[hourKeyAlt] || 0;
+                  const maxCount = Math.max(...Object.values(data?.byHour || {}), 1);
+                  const height = count > 0 ? Math.max((count / maxCount) * 100, 20) : 10;
+                  
+                  return (
+                    <div key={hourNum} className="flex-1 flex flex-col items-center gap-0.5">
+                      <div
+                        className={`w-full rounded-t transition-all duration-500 ${count > 0 ? 'bg-primary' : 'bg-muted/30'}`}
+                        style={{ height: `${height}%` }}
+                        title={`${hourNum}h: ${count} agendamentos`}
+                      />
+                      <span className="text-[8px] text-muted-foreground">{hourNum}h</span>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
           </div>
         )}
       </CardContent>
