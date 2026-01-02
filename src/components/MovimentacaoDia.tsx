@@ -403,16 +403,15 @@ export default function MovimentacaoDia() {
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Ilustração da barbearia - AGORA À ESQUERDA */}
             <div className="relative">
-              {/* Status badge - fora do quadro, canto superior direito */}
-              <div className="absolute -top-7 right-0 flex items-center gap-2 text-xs font-semibold">
-                <svg viewBox="0 0 16 16" className="w-4 h-4">
-                  <circle cx="8" cy="8" r="7" fill="transparent" stroke="currentColor" strokeWidth="1" className="text-border" />
-                  <path d="M8 1 A7 7 0 0 1 15 8 L8 8 Z" className="fill-success" />
-                </svg>
-                <span className={statusBarbearia.className}>{statusBarbearia.texto}</span>
-              </div>
-
               <div className="rounded-xl border border-border/30 overflow-hidden min-h-[260px] bg-gradient-to-br from-secondary/40 via-background to-secondary/20 relative">
+                {/* Status badge - canto superior direito DENTRO do quadro */}
+                <div className="absolute top-2 right-2 z-20 flex items-center gap-1.5 text-xs font-semibold bg-background/70 backdrop-blur-sm rounded-full px-2 py-1">
+                  <svg viewBox="0 0 16 16" className="w-3.5 h-3.5">
+                    <circle cx="8" cy="8" r="7" fill="transparent" stroke="currentColor" strokeWidth="1" className="text-border" />
+                    <path d="M8 1 A7 7 0 0 1 15 8 L8 8 Z" className="fill-success" />
+                  </svg>
+                  <span className={statusBarbearia.className}>{statusBarbearia.texto}</span>
+                </div>
                 {/* Parede de fundo com textura */}
                 <div className="absolute inset-0 opacity-30">
                   <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-muted/50 to-transparent" />
@@ -424,11 +423,11 @@ export default function MovimentacaoDia() {
 
                 {/* Número de agendamentos futuros no chão - em perspectiva */}
                 <div 
-                  className="absolute left-1/2 bottom-10 -translate-x-1/2 text-4xl font-bold text-warning select-none pointer-events-none"
+                  className="absolute left-1/2 bottom-20 -translate-x-1/2 text-5xl font-bold text-warning select-none pointer-events-none z-10"
                   style={{
                     transform: "translateX(-50%) perspective(200px) rotateX(50deg) scaleY(1.3)",
                     textShadow: "2px 4px 8px rgba(0,0,0,0.5)",
-                    opacity: 0.85,
+                    opacity: 0.9,
                   }}
                 >
                   {agendamentosFuturos}
@@ -471,7 +470,7 @@ export default function MovimentacaoDia() {
                 </div>
 
                 {/* Banco de espera */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[80%]">
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[80%]">
                   <BancoEspera />
                 </div>
 
@@ -479,7 +478,7 @@ export default function MovimentacaoDia() {
                 {Array.from({ length: clientesSentados }).map((_, i) => (
                   <div
                     key={`sentado-${i}`}
-                    className="absolute bottom-14"
+                    className="absolute bottom-8"
                     style={{ left: `${18 + i * 18}%` }}
                   >
                     <div className="crew-bob" style={{ animationDelay: `${i * 0.2}s` }}>
