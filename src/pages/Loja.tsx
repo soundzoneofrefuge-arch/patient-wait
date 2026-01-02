@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Trash2, ImageIcon, Store, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ImageIcon, Store, Loader2, Minus } from "lucide-react";
 import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
+import { useCart } from "@/hooks/useCart";
+import { CartButton } from "@/components/CartButton";
+import { AddToCartDialog } from "@/components/AddToCartDialog";
 
 interface Produto {
   id: string;
@@ -31,6 +34,11 @@ export default function Loja() {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Cart states
+  const { addItem, getItemQuantity, updateQuantity, hasAskedContinue, setHasAskedContinue } = useCart();
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [lastAddedProduct, setLastAddedProduct] = useState<string>("");
 
   // Verificar se usuário é admin
   useEffect(() => {
@@ -85,7 +93,6 @@ export default function Loja() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validar tamanho (máx 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error("Imagem muito grande. Máximo 5MB.");
         return;
@@ -96,7 +103,7 @@ export default function Loja() {
     }
   };
 
-  // Adicionar produto
+  // Adicionar produto (admin)
   const handleAddProduto = async () => {
     if (!novoNome.trim() || !novoPreco.trim()) {
       toast.warning("Preencha nome e preço do produto");
@@ -108,7 +115,6 @@ export default function Loja() {
     try {
       let fotoUrl: string | null = null;
 
-      // Upload da imagem se selecionada
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -124,7 +130,6 @@ export default function Loja() {
           return;
         }
 
-        // Obter URL pública
         const { data: urlData } = supabase.storage
           .from("produtos")
           .getPublicUrl(fileName);
@@ -132,7 +137,6 @@ export default function Loja() {
         fotoUrl = urlData.publicUrl;
       }
 
-      // Inserir produto
       const { data, error } = await supabase
         .from("produtos_loja")
         .insert({
@@ -160,10 +164,9 @@ export default function Loja() {
     }
   };
 
-  // Remover produto
+  // Remover produto (admin)
   const handleRemoveProduto = async (id: string, fotoUrl: string | null) => {
     try {
-      // Remover imagem do storage se existir
       if (fotoUrl) {
         const fileName = fotoUrl.split('/').pop();
         if (fileName) {
@@ -186,6 +189,42 @@ export default function Loja() {
     }
   };
 
+  // Adicionar ao carrinho
+  const handleAddToCart = (produto: Produto) => {
+    addItem({
+      id: produto.id,
+      nome: produto.nome,
+      preco: produto.preco,
+      foto_url: produto.foto_url,
+    });
+
+    // Só pergunta na primeira vez
+    if (!hasAskedContinue) {
+      setLastAddedProduct(produto.nome);
+      setShowAddDialog(true);
+    } else {
+      toast.success(`${produto.nome} adicionado ao carrinho!`);
+    }
+  };
+
+  // Diminuir quantidade
+  const handleDecreaseQuantity = (produtoId: string) => {
+    const currentQty = getItemQuantity(produtoId);
+    if (currentQty > 0) {
+      updateQuantity(produtoId, currentQty - 1);
+    }
+  };
+
+  // Aumentar quantidade
+  const handleIncreaseQuantity = (produto: Produto) => {
+    const currentQty = getItemQuantity(produto.id);
+    if (currentQty === 0) {
+      handleAddToCart(produto);
+    } else {
+      updateQuantity(produto.id, currentQty + 1);
+    }
+  };
+
   return (
     <div 
       className="min-h-screen bg-cover bg-center bg-no-repeat relative"
@@ -203,7 +242,7 @@ export default function Loja() {
         }}
       ></div>
 
-      <main className="container mx-auto px-4 sm:px-6 py-8 relative z-10">
+      <main className="container mx-auto px-4 sm:px-6 py-8 relative z-10 pb-24">
         {/* Header */}
         <header className="mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -335,53 +374,107 @@ export default function Loja() {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {produtos.map((produto, index) => (
-              <Card 
-                key={produto.id} 
-                className="group overflow-hidden bg-card/80 backdrop-blur-sm border-border/30 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 animate-slide-up"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                {/* Image */}
-                <div className="relative aspect-square bg-gradient-to-br from-muted/50 to-muted overflow-hidden">
-                  {produto.foto_url ? (
-                    <img
-                      src={produto.foto_url}
-                      alt={produto.nome}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon className="h-16 w-16 text-muted-foreground/30" />
-                    </div>
-                  )}
+            {produtos.map((produto, index) => {
+              const quantity = getItemQuantity(produto.id);
+              
+              return (
+                <Card 
+                  key={produto.id} 
+                  className="group overflow-hidden bg-card/80 backdrop-blur-sm border-border/30 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 animate-slide-up cursor-pointer"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                  onClick={() => handleAddToCart(produto)}
+                >
+                  {/* Image */}
+                  <div className="relative aspect-square bg-gradient-to-br from-muted/50 to-muted overflow-hidden">
+                    {produto.foto_url ? (
+                      <img
+                        src={produto.foto_url}
+                        alt={produto.nome}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="h-16 w-16 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    
+                    {/* Admin delete button */}
+                    {isAdmin && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveProduto(produto.id, produto.foto_url);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   
-                  {/* Admin delete button */}
-                  {isAdmin && (
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleRemoveProduto(produto.id, produto.foto_url)}
+                  {/* Content */}
+                  <CardContent className="p-4 relative">
+                    <h3 className="font-semibold text-foreground truncate pr-20">
+                      {produto.nome}
+                    </h3>
+                    <p className="text-lg font-bold text-primary">
+                      {produto.preco}
+                    </p>
+                    
+                    {/* Contador de quantidade - canto inferior direito */}
+                    <div 
+                      className="absolute bottom-3 right-3 flex items-center gap-1 bg-secondary/90 backdrop-blur-sm border border-border/50 rounded-full shadow-md"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                
-                {/* Content */}
-                <CardContent className="p-4 space-y-1">
-                  <h3 className="font-semibold text-foreground truncate">
-                    {produto.nome}
-                  </h3>
-                  <p className="text-lg font-bold text-primary">
-                    {produto.preco}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDecreaseQuantity(produto.id)}
+                        className="h-8 w-8 rounded-full hover:bg-destructive/20 hover:text-destructive"
+                        disabled={quantity === 0}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="min-w-[24px] text-center font-bold text-sm text-foreground">
+                        {quantity}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleIncreaseQuantity(produto)}
+                        className="h-8 w-8 rounded-full hover:bg-primary/20 hover:text-primary"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </main>
+
+      {/* Botão flutuante do carrinho */}
+      <CartButton />
+
+      {/* Dialog de confirmação de adição */}
+      <AddToCartDialog
+        open={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+        onContinue={() => {
+          setHasAskedContinue(true);
+          setShowAddDialog(false);
+        }}
+        onCheckout={() => {
+          setHasAskedContinue(true);
+          setShowAddDialog(false);
+          navigate("/checkout");
+        }}
+        productName={lastAddedProduct}
+      />
     </div>
   );
 }
