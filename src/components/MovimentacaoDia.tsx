@@ -19,6 +19,18 @@ function getBrazilTimeHHMM() {
   }).format(new Date());
 }
 
+// Retorna hora atual em formato "HH:MM" para comparação
+function getBrazilCurrentTime() {
+  const now = new Date();
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(now);
+}
+
 /* ===================== SVG COMPONENTS ===================== */
 
 // Cadeira de barbearia clássica (vista lateral simplificada)
@@ -242,6 +254,7 @@ export default function MovimentacaoDia() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [horaAtual, setHoraAtual] = useState(getBrazilTimeHHMM());
+  const [horaAtualFull, setHoraAtualFull] = useState(getBrazilCurrentTime());
 
   const fetchMovement = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -270,23 +283,48 @@ export default function MovimentacaoDia() {
   }, [fetchMovement]);
 
   useEffect(() => {
-    const id = window.setInterval(() => setHoraAtual(getBrazilTimeHHMM()), 1000 * 60);
+    const id = window.setInterval(() => {
+      setHoraAtual(getBrazilTimeHHMM());
+      setHoraAtualFull(getBrazilCurrentTime());
+    }, 1000 * 30); // Atualiza a cada 30s
     return () => window.clearInterval(id);
   }, []);
 
   const totalAgendamentos = movement?.total ?? 0;
 
+  // Calcular agendamentos futuros (que ainda não passaram)
+  const agendamentosFuturos = useMemo(() => {
+    const byHour = movement?.byHour ?? {};
+    const [horaAtualH, minutoAtualM] = horaAtualFull.split(":").map(Number);
+    const horaAtualMinutos = horaAtualH * 60 + minutoAtualM;
+    
+    let count = 0;
+    for (const [hora, quantidade] of Object.entries(byHour)) {
+      const horaNum = parseInt(hora, 10);
+      // Considerar que cada hora começa em :00 e termina em :59
+      // Se o agendamento é para 11:00, ele já passou se agora é 11:01 ou mais
+      const horaEmMinutos = horaNum * 60;
+      if (horaEmMinutos > horaAtualMinutos) {
+        count += quantidade;
+      } else if (horaEmMinutos === Math.floor(horaAtualMinutos / 60) * 60 && minutoAtualM < 30) {
+        // Na mesma hora, mas antes de :30, ainda conta os agendamentos dessa hora
+        count += quantidade;
+      }
+    }
+    return count;
+  }, [movement, horaAtualFull]);
+
   const statusBarbearia = useMemo(() => {
-    if (totalAgendamentos === 0)
+    if (agendamentosFuturos === 0)
       return { texto: "Tranquilo", className: "text-success" };
-    if (totalAgendamentos <= 4)
+    if (agendamentosFuturos <= 4)
       return { texto: "Pouco movimento", className: "text-success" };
-    if (totalAgendamentos <= 8)
+    if (agendamentosFuturos <= 8)
       return { texto: "Movimento moderado", className: "text-warning" };
-    if (totalAgendamentos <= 12)
+    if (agendamentosFuturos <= 12)
       return { texto: "Bastante movimento", className: "text-warning" };
     return { texto: "Muito movimentado", className: "text-destructive" };
-  }, [totalAgendamentos]);
+  }, [agendamentosFuturos]);
 
   // Horários de operação (09h às 20h)
   const horariosOperacao = useMemo(() => {
@@ -312,9 +350,9 @@ export default function MovimentacaoDia() {
     return ordenados.slice(0, 3).map((h) => h.hora);
   }, [agendamentosHoje]);
 
-  // Clientes para ilustração
-  const clientesSentados = Math.min(totalAgendamentos, 4);
-  const clientesEmPe = Math.max(0, Math.min(totalAgendamentos - clientesSentados, 6));
+  // Clientes para ilustração - BASEADO EM AGENDAMENTOS FUTUROS
+  const clientesSentados = Math.min(agendamentosFuturos, 4);
+  const clientesEmPe = Math.max(0, Math.min(agendamentosFuturos - clientesSentados, 6));
 
   const clienteTones = useMemo(
     () => [
@@ -363,69 +401,7 @@ export default function MovimentacaoDia() {
           </div>
         ) : (
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Gráfico de horários populares */}
-            <div className="space-y-3 min-h-[260px] flex flex-col">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span className="font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Horários Populares
-                </span>
-                <span className="text-xs bg-muted/50 px-2 py-1 rounded">{horaAtual} - Agora</span>
-              </div>
-
-              <div className="flex items-end gap-1 h-32 p-2 bg-muted/20 rounded-lg border border-border/30">
-                {horariosOperacao.map((hora) => {
-                  const count = movement?.byHour?.[hora] ?? 0;
-                  const altura = count > 0 ? Math.max(15, (count / maxCount) * 100) : 8;
-                  const isPico = horariosPico.includes(hora) && count > 0;
-
-                  return (
-                    <div key={hora} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                      <span className="text-[10px] text-muted-foreground font-medium">
-                        {count > 0 ? count : ""}
-                      </span>
-                      <div
-                        className={cn(
-                          "w-full rounded-t-sm transition-all duration-500 relative",
-                          isPico
-                            ? "bg-gradient-to-t from-destructive to-destructive/70"
-                            : count > 0
-                              ? "bg-gradient-to-t from-primary to-primary/70"
-                              : "bg-muted/40"
-                        )}
-                        style={{ height: `${altura}%` }}
-                        title={`${hora}h: ${count} agendamento(s)`}
-                      >
-                        {isPico && count > 0 && (
-                          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-destructive rounded-full animate-pulse" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex gap-1 text-[10px] text-muted-foreground px-2">
-                {horariosOperacao.map((hora) => (
-                  <div key={hora} className="flex-1 text-center font-medium">
-                    {hora}h
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-6 text-xs text-muted-foreground pt-3 border-t border-border/30 mt-auto">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-gradient-to-t from-destructive to-destructive/70 rounded-sm" />
-                  <span>Horário de pico</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-gradient-to-t from-primary to-primary/70 rounded-sm" />
-                  <span>Normal</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Ilustração da barbearia */}
+            {/* Ilustração da barbearia - AGORA À ESQUERDA */}
             <div className="relative">
               {/* Status badge - fora do quadro, canto superior direito */}
               <div className="absolute -top-7 right-0 flex items-center gap-2 text-xs font-semibold">
@@ -445,6 +421,18 @@ export default function MovimentacaoDia() {
                 {/* Chão */}
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-muted/60 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 h-2 bg-muted-foreground/20" />
+
+                {/* Número de agendamentos futuros no chão - em perspectiva */}
+                <div 
+                  className="absolute left-1/2 bottom-10 -translate-x-1/2 text-4xl font-bold text-warning select-none pointer-events-none"
+                  style={{
+                    transform: "translateX(-50%) perspective(200px) rotateX(50deg) scaleY(1.3)",
+                    textShadow: "2px 4px 8px rgba(0,0,0,0.5)",
+                    opacity: 0.85,
+                  }}
+                >
+                  {agendamentosFuturos}
+                </div>
 
                 {/* Decoração - Barber Poles */}
                 <div className="absolute top-4 left-3">
@@ -529,10 +517,67 @@ export default function MovimentacaoDia() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
 
-                {/* Total */}
-                <div className="absolute bottom-3 left-3 text-xs font-medium text-muted-foreground bg-background/60 px-2 py-1 rounded">
-                  {totalAgendamentos} {totalAgendamentos === 1 ? "agendamento" : "agendamentos"} hoje
+            {/* Gráfico de horários populares - AGORA À DIREITA */}
+            <div className="space-y-3 min-h-[260px] flex flex-col">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span className="font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Horários Populares
+                </span>
+                <span className="text-xs bg-muted/50 px-2 py-1 rounded">{horaAtual} - Agora</span>
+              </div>
+
+              <div className="flex items-end gap-1 h-32 p-2 bg-muted/20 rounded-lg border border-border/30">
+                {horariosOperacao.map((hora) => {
+                  const count = movement?.byHour?.[hora] ?? 0;
+                  const altura = count > 0 ? Math.max(15, (count / maxCount) * 100) : 8;
+                  const isPico = horariosPico.includes(hora) && count > 0;
+
+                  return (
+                    <div key={hora} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        {count > 0 ? count : ""}
+                      </span>
+                      <div
+                        className={cn(
+                          "w-full rounded-t-sm transition-all duration-500 relative",
+                          isPico
+                            ? "bg-gradient-to-t from-destructive to-destructive/70"
+                            : count > 0
+                              ? "bg-gradient-to-t from-primary to-primary/70"
+                              : "bg-muted/40"
+                        )}
+                        style={{ height: `${altura}%` }}
+                        title={`${hora}h: ${count} agendamento(s)`}
+                      >
+                        {isPico && count > 0 && (
+                          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-destructive rounded-full animate-pulse" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-1 text-[10px] text-muted-foreground px-2">
+                {horariosOperacao.map((hora) => (
+                  <div key={hora} className="flex-1 text-center font-medium">
+                    {hora}h
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-6 text-xs text-muted-foreground pt-3 border-t border-border/30 mt-auto">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gradient-to-t from-destructive to-destructive/70 rounded-sm" />
+                  <span>Horário de pico</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gradient-to-t from-primary to-primary/70 rounded-sm" />
+                  <span>Normal</span>
                 </div>
               </div>
             </div>
