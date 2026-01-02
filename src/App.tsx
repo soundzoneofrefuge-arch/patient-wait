@@ -5,6 +5,7 @@ import { Dashboard } from "@/pages/Dashboard";
 import Auth from "@/pages/Auth";
 import ResetPassword from "@/pages/ResetPassword";
 import Booking from "@/pages/Booking";
+import Loja from "@/pages/Loja";
 import BookingConfirmation from "@/pages/BookingConfirmation";
 import Reschedule from "@/pages/Reschedule";
 import RescheduleConfirmation from "@/pages/RescheduleConfirmation";
@@ -75,6 +76,7 @@ const App = () => {
             <Route path="/reschedule-confirmation" element={<RescheduleConfirmation />} />
             <Route path="/cancel" element={<Cancel />} />
             <Route path="/cancel-confirmation" element={<CancelConfirmation />} />
+            <Route path="/loja" element={<Loja />} />
             <Route path="*" element={<Booking />} />
           </Routes>
         </div>

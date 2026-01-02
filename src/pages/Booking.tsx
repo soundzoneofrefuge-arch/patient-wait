@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, CheckCircle2 } from "lucide-react";
+import { CalendarIcon, CheckCircle2, Store } from "lucide-react";
 import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
 import ConsultaAgendamentos from "@/components/ConsultaAgendamentos";
@@ -319,13 +319,21 @@ export default function Booking() {
                 REAGENDAR
               </Button>
             </div>
-            <div className="order-1 sm:order-2">
+            <div className="order-1 sm:order-2 flex flex-col gap-2">
               <Button 
                 variant="outline" 
                 onClick={() => navigate("/auth")}
                 className="text-xs sm:text-sm px-3 sm:px-4"
               >
                 ACESSO ADM
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/loja")}
+                className="text-xs sm:text-sm px-3 sm:px-4 border-primary/50 hover:bg-primary/10 hover:border-primary"
+              >
+                <Store className="h-4 w-4 mr-1" />
+                LOJA
               </Button>
             </div>
           </div>

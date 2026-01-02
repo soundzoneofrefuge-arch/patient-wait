@@ -170,6 +170,39 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos_loja: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          foto_url: string | null
+          id: string
+          nome: string
+          ordem: number | null
+          preco: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+          preco: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+          preco?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
