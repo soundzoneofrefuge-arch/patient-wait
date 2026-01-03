@@ -137,9 +137,9 @@ export type Database = {
           name: string
           nome_profissionais: string | null
           opening_time: string
-          phone: string | null
           slot_interval_minutes: number
           url_insta: string | null
+          url_phone: string | null
         }
         Insert: {
           address?: string | null
@@ -152,9 +152,9 @@ export type Database = {
           name: string
           nome_profissionais?: string | null
           opening_time?: string
-          phone?: string | null
           slot_interval_minutes?: number
           url_insta?: string | null
+          url_phone?: string | null
         }
         Update: {
           address?: string | null
@@ -167,9 +167,9 @@ export type Database = {
           name?: string
           nome_profissionais?: string | null
           opening_time?: string
-          phone?: string | null
           slot_interval_minutes?: number
           url_insta?: string | null
+          url_phone?: string | null
         }
         Relationships: []
       }
