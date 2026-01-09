@@ -2,11 +2,15 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// ISSO É FIXO (compatível com o ambiente do Lovable)
-// A anon key pode ficar no frontend (não é segredo). Evitamos depender de VITE_*.
-const SUPABASE_URL = "https://fcmakvaoosrjksvxzpom.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjbWFrdmFvb3Nyamtzdnh6cG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNjgwNDQsImV4cCI6MjA4Mjg0NDA0NH0.EiUSpUSQWwKg3A-PyFpk8kZajhDxXpkAjm2k8PhzpR4";
+// Configuração Dinâmica (Profissional)
+// Agora o código busca as chaves nas Variáveis de Ambiente (Cloudflare ou .env)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Verificação de segurança: Avisa no console se esquecer de configurar
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error("ERRO CRÍTICO: As chaves do Supabase não foram encontradas. Verifique o .env ou o painel da Cloudflare.");
+}
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
