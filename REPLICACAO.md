@@ -40,7 +40,7 @@ git push -u origin main
 
 ---
 
-ATENÇÃO!!!
+⚠️**ATENÇÃO!!!**
 No caminho src/integrations/supabase/client.ts por padrão de criação e fácil exibição, a ferramente de criação deixa as chaves lá. 
 Quando em produção, eu uso o seguinte código no client.ts:
 
