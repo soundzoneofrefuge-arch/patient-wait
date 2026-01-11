@@ -73,17 +73,21 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
 });
 ```
 
-Este código é genérico, não guarda chaves e aponta para o env. importante ressaltar que quando precisar editar novamente em alguma ferramente, como o Lovable, por exemplo, tem que subir um arquivo .env para a raiz do projeto para que consiga visualizar o preview. 
+Este código é genérico, não guarda chaves e aponta para o .env local e/ou em nuvem, no caso queremos cloudfare pages. É importante ressaltar que quando precisar editar novamente em alguma ferramenta, como o Lovable, por exemplo, tem que subir um arquivo .env para a raiz do projeto no github para que consiga visualizar o preview. 
 Assim, não temos nenhuma chave no frontend do código. Não é boa prática deixar chaves no forntend. Até posso ter o arquivo .env na raiz, mas paenas com os nomes, sem as chaves. Quando for editar, basta colocar as chaves no env. mas em produção não esqueça de apagar.
 
-Por padrão, o Lovable, por exemplo, costuma usar para credencias e isso que preencherá o .env. ATENÇÃO!! Se o client.ts tiver os 3, incluindo o VITE_SUPABASE_PROJECT ID, tem que usar! Tem que bater certinho.
-Use os nomes abaixo ocmo padrão. Os nomes precisam ser extamente iguais aos que estão no Supabase.
+Por padrão, o Lovable, por exemplo, costuma usar para credencias e isso que preencherá o .env. 
+
+**ATENÇÃO!!!**
+Use os nomes abaixo ocmo padrão. **Os nomes precisam ser exatamente iguais aos que estão no Supabase. Eu já esqueci de colocar o VITE_ no cloudfare e não funcionou!**
 
 ```bash
 VITE_SUPABASE_PROJECT_ID=seu_id_do_projeto_aqui
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJh... (sua chave inteira aqui)
 ```
+Você perceberá que com as chvaves configuradas na cloudfare, o site vai aparecer, mas no preview do Lovable, por exemplo, não vai aparecer, vai dar erro de págino. Para editar no Lovable, suba um .env com nome e chaves segundo o modelo acima.
+
 ---
 
 ### 2️⃣ SUPABASE (10 min)
