@@ -178,6 +178,9 @@ git push origin main
 
 ### 3️⃣ CLOUDFLARE PAGES (5 min)
 
+Apague o arquivo bun.lock do projeto. Cloudfare opera em npm, melhor. Já tem o package-lock.json. Com o bun.lock, a cloudfare fica perdida com 2 para implantar.
+Assim é mais fácil.
+
 #### A) Conectar repo
 ```
 https://dash.cloudflare.com
@@ -186,7 +189,7 @@ https://dash.cloudflare.com
 
 Build settings:
 - Framework preset: None (Nenhum)
-- Build command: npm run build (ou bun run build - ambos funcionam!)
+- Build command: npm run build (atualizado 11/01/2026)
 - Build output directory: dist
 - Deployment command: (deixar em branco)
 ```
