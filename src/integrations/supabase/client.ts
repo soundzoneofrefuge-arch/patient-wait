@@ -1,12 +1,21 @@
-// src/integrations/supabase/client.ts
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// ISSO É FIXO (compatível com o ambiente do Lovable)
-// A anon key pode ficar no frontend (não é segredo). Evitamos depender de VITE_*.
-const SUPABASE_URL = "https://fcmakvaoosrjksvxzpom.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjbWFrdmFvb3Nyamtzdnh6cG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNjgwNDQsImV4cCI6MjA4Mjg0NDA0NH0.EiUSpUSQWwKg3A-PyFpk8kZajhDxXpkAjm2k8PhzpR4";
+// --- CONFIGURAÇÃO GENÉRICA (CLOUD & LOCAL) ---
+// Busca as chaves nas variáveis de ambiente.
+// Em PRODUÇÃO: Pega do Painel da Cloudflare.
+// Em DESENVOLVIMENTO: Pega do arquivo .env (se existir) ou Secrets do Lovable.
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// O Project ID muitas vezes é útil para logs ou integrações futuras
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+// Alerta de Segurança no Console (Ajuda a debugar telas brancas)
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error("ERRO CRÍTICO: Variáveis do Supabase não encontradas.");
+  console.error("Verifique se VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas no .env ou no painel da Cloudflare.");
+}
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
