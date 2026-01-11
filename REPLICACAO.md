@@ -41,7 +41,7 @@ git push -u origin main
 ---
 
 ⚠️**ATENÇÃO!!!**
-No caminho src/integrations/supabase/client.ts por padrão de criação e fácil exibição, a ferramente de criação deixa as chaves lá. 
+No caminho src/integrations/supabase/client.ts por padrão de criação e fácil exibição, a ferramenta de criação deixa as chaves lá. 
 Quando em produção, eu uso o seguinte código no client.ts:
 
 ```bash
@@ -76,7 +76,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
 Este código é genérico, não guarda chaves e aponta para o env. importante ressaltar que quando precisar editar novamente em alguma ferramente, como o Lovable, por exemplo, tem que subir um arquivo .env para a raiz do projeto para que consiga visualizar o preview. 
 Assim, não temos nenhuma chave no frontend do código. Não é boa prática deixar chaves no forntend. Até posso ter o arquivo .env na raiz, mas paenas com os nomes, sem as chaves. Quando for editar, basta colocar as chaves no env. mas em produção não esqueça de apagar.
 
-Por padrão, o Lovable, por exmeplo, costuma usar para credencias e isso que preencherá o .env. As vezes, não precisa do PROJECT ID. Use os nomes abaixo ocmo padrão. Os nomes precisam ser extamente iguais aos que estão no Supabase.
+Por padrão, o Lovable, por exemplo, costuma usar para credencias e isso que preencherá o .env. ATENÇÃO!! Se o client.ts tiver os 3, incluindo o VITE_SUPABASE_PROJECT ID, tem que usar! Tem que bater certinho.
+Use os nomes abaixo ocmo padrão. Os nomes precisam ser extamente iguais aos que estão no Supabase.
 
 ```bash
 VITE_SUPABASE_PROJECT_ID=seu_id_do_projeto_aqui
