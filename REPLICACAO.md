@@ -207,7 +207,10 @@ VITE_SUPABASE_ANON_KEY = eyJhbGc...
 ```
 Save and Deploy → Aguardar 2-3 min
 ```
+**ATENÇÃO!!!**
 
+**O site subirá com o nome padrão do repositório do github. Para colocar um nome.pagas.dev que quiser, crie um nome projeto, em Project Name coloque o nome que quiser e faça novo deploy,
+como um nome projeto. Agora, você terá 2. Apague o anterior em Settings depois.
 ---
 
 ## ✅ CHECKLIST PÓS-DEPLOY
