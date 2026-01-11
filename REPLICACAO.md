@@ -40,6 +40,48 @@ git push -u origin main
 
 ---
 
+ATENÇÃO!!!
+No caminho src/integrations/supabase/client.ts por padrão de criação e fácil exibição, a ferramente de criação deixa as chaves lá. 
+Quando em produção, eu uso o seguinte código no client.ts:
+
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from './types';
+
+// --- CONFIGURAÇÃO GENÉRICA (CLOUD & LOCAL) ---
+// Busca as chaves nas variáveis de ambiente.
+// Em PRODUÇÃO: Pega do Painel da Cloudflare.
+// Em DESENVOLVIMENTO: Pega do arquivo .env (se existir) ou Secrets do Lovable.
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// O Project ID muitas vezes é útil para logs ou integrações futuras
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+// Alerta de Segurança no Console (Ajuda a debugar telas brancas)
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error("ERRO CRÍTICO: Variáveis do Supabase não encontradas.");
+  console.error("Verifique se VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas no .env ou no painel da Cloudflare.");
+}
+
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+  }
+});
+
+Este código é genérico, não guarda chaves e aponta para o env. importante ressaltar que quando precisar editar novamente em alguma ferramente, como o Lovable, por exemplo, tem que subir um arquivo .env para a raiz do projeto para que consiga visualizar o preview. 
+Assim, não temos nenhuma chave no frontend do código. Não é boa prática deixar chaves no forntend. Até posso ter o arquivo .env na raiz, mas paenas com os nomes, sem as chaves. Quando for editar, basta colocar as chaves no env. mas em produção não esqueça de apagar.
+
+Por padrão, o Lovable, por exmeplo, costuma usar para credencias e isso que preencherá o .env. As vezes, não precisa do PROJECT ID. Use os nomes abaixo ocmo padrão. Os nomes precisam ser extamente iguais aos que estão no Supabase.
+
+VITE_SUPABASE_PROJECT_ID=seu_id_do_projeto_aqui
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJh... (sua chave inteira aqui)
+
+---
+
 ### 2️⃣ SUPABASE (10 min)
 
 #### A) Criar projeto
