@@ -254,20 +254,26 @@ export default function Reschedule() {
     }
   }
 
-  // Buscar slots por profissional para verificar disponibilidade (primeira data)
+  // Buscar slots por profissional para verificar disponibilidade (data selecionada)
   useEffect(() => {
-    if (!config || pros.length === 0 || nextSixDates.length === 0) return;
-    const firstDate = nextSixDates[0];
+    if (!config || pros.length === 0 || !newDate) return;
+    
+    const selectedDateStr = (() => {
+      const y = newDate.getFullYear();
+      const m = String(newDate.getMonth() + 1).padStart(2, "0");
+      const d = String(newDate.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    })();
     
     const fetchAllProsSlots = async () => {
       const results: Record<string, string[]> = {};
       await Promise.all(pros.map(async (p) => {
-        results[p] = await fetchSlotsForProfessional(p, firstDate);
+        results[p] = await fetchSlotsForProfessional(p, selectedDateStr);
       }));
-      setSlotsByProDateFirst(prev => ({ ...prev, [firstDate]: results }));
+      setSlotsByProDateFirst(prev => ({ ...prev, [selectedDateStr]: results }));
     };
     fetchAllProsSlots();
-  }, [config, pros, nextSixDates]);
+  }, [config, pros, newDate]);
 
   useEffect(() => {
     if (!config) return;
@@ -532,10 +538,16 @@ export default function Reschedule() {
                 </SelectTrigger>
                 <SelectContent>
                   {pros.map(p => {
-                    // Verificar se profissional está esgotado para a primeira data
-                    const firstDate = nextSixDates[0];
-                    const proSlots = slotsByProDateFirst[firstDate]?.[p];
-                    const isEsgotado = proSlots !== undefined && proSlots.length === 0;
+                    // Verificar se profissional está esgotado somente quando uma data foi selecionada
+                    const currentDateStr = newDate ? (() => {
+                      const y = newDate.getFullYear();
+                      const m = String(newDate.getMonth() + 1).padStart(2, "0");
+                      const d = String(newDate.getDate()).padStart(2, "0");
+                      return `${y}-${m}-${d}`;
+                    })() : null;
+                    
+                    const proSlots = currentDateStr ? slotsByProDateFirst[currentDateStr]?.[p] : undefined;
+                    const isEsgotado = currentDateStr && proSlots !== undefined && proSlots.length === 0;
                     
                     return (
                       <SelectItem key={p} value={p}>

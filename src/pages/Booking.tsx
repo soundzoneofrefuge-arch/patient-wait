@@ -218,20 +218,26 @@ export default function Booking() {
     }
   }
 
-  // Buscar slots por profissional para verificar disponibilidade (primeira data)
+  // Buscar slots por profissional para verificar disponibilidade (data selecionada)
   useEffect(() => {
-    if (!config || pros.length === 0 || nextSixDates.length === 0) return;
-    const firstDate = nextSixDates[0];
+    if (!config || pros.length === 0 || !date) return;
+    
+    const selectedDateStr = (() => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    })();
     
     const fetchAllProsSlots = async () => {
       const results: Record<string, string[]> = {};
       await Promise.all(pros.map(async (p) => {
-        results[p] = await fetchSlotsForProfessional(p, firstDate);
+        results[p] = await fetchSlotsForProfessional(p, selectedDateStr);
       }));
-      setSlotsByProDateFirst(prev => ({ ...prev, [firstDate]: results }));
+      setSlotsByProDateFirst(prev => ({ ...prev, [selectedDateStr]: results }));
     };
     fetchAllProsSlots();
-  }, [config, pros, nextSixDates]);
+  }, [config, pros, date]);
 
   // Atualização automática ao mudar data/profissional
   useEffect(() => {
@@ -444,12 +450,18 @@ export default function Booking() {
                 <SelectTrigger className={cn(professional && "bg-primary text-white border-primary [&>svg]:text-white")}>
                   <SelectValue placeholder="Selecione um profissional" />
                 </SelectTrigger>
-                <SelectContent>
+              <SelectContent>
                   {pros.map(p => {
-                    // Verificar se profissional está esgotado para a primeira data
-                    const firstDate = nextSixDates[0];
-                    const proSlots = slotsByProDateFirst[firstDate]?.[p];
-                    const isEsgotado = proSlots !== undefined && proSlots.length === 0;
+                    // Verificar se profissional está esgotado somente quando uma data foi selecionada
+                    const currentDateStr = date ? (() => {
+                      const y = date.getFullYear();
+                      const m = String(date.getMonth() + 1).padStart(2, "0");
+                      const d = String(date.getDate()).padStart(2, "0");
+                      return `${y}-${m}-${d}`;
+                    })() : null;
+                    
+                    const proSlots = currentDateStr ? slotsByProDateFirst[currentDateStr]?.[p] : undefined;
+                    const isEsgotado = currentDateStr && proSlots !== undefined && proSlots.length === 0;
                     
                     return (
                       <SelectItem key={p} value={p}>
