@@ -42,6 +42,7 @@ export default function Booking() {
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({});
+  const [slotsByProDateFirst, setSlotsByProDateFirst] = useState<Record<string, Record<string, string[]>>>({});
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState<any>(null);
   const [pros, setPros] = useState<string[]>([]);
@@ -200,6 +201,37 @@ export default function Booking() {
       setLoadingSlots(false);
     }
   }
+
+  // Função para buscar slots de um profissional específico para a primeira data
+  async function fetchSlotsForProfessional(pro: string, dateStr: string): Promise<string[]> {
+    try {
+      const { data, error } = await supabase.functions.invoke("get-available-slots", {
+        body: {
+          date: dateStr,
+          professional: pro
+        }
+      });
+      if (error) throw error;
+      return data?.slots as string[] || [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Buscar slots por profissional para verificar disponibilidade (primeira data)
+  useEffect(() => {
+    if (!config || pros.length === 0 || nextSixDates.length === 0) return;
+    const firstDate = nextSixDates[0];
+    
+    const fetchAllProsSlots = async () => {
+      const results: Record<string, string[]> = {};
+      await Promise.all(pros.map(async (p) => {
+        results[p] = await fetchSlotsForProfessional(p, firstDate);
+      }));
+      setSlotsByProDateFirst(prev => ({ ...prev, [firstDate]: results }));
+    };
+    fetchAllProsSlots();
+  }, [config, pros, nextSixDates]);
 
   // Atualização automática ao mudar data/profissional
   useEffect(() => {
@@ -380,10 +412,23 @@ export default function Booking() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={date} onSelect={newDate => {
-                    setDate(newDate);
-                    setIsDatePickerOpen(false);
-                  }} initialFocus className={cn("p-3 pointer-events-auto [&_.rdp-head]:hidden [&_.rdp-weekdays]:hidden")} />
+                  <Calendar 
+                    mode="single" 
+                    selected={date} 
+                    onSelect={newDate => {
+                      setDate(newDate);
+                      setIsDatePickerOpen(false);
+                    }} 
+                    initialFocus 
+                    className={cn("p-3 pointer-events-auto [&_.rdp-head]:hidden [&_.rdp-weekdays]:hidden")}
+                    disabled={(selectedDate) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const target = new Date(selectedDate);
+                      target.setHours(0, 0, 0, 0);
+                      return target < today || selectedDate.getDay() === 0;
+                    }}
+                  />
                 </PopoverContent>
               </Popover>
             </CardContent>
@@ -400,7 +445,18 @@ export default function Booking() {
                   <SelectValue placeholder="Selecione um profissional" />
                 </SelectTrigger>
                 <SelectContent>
-                  {pros.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  {pros.map(p => {
+                    // Verificar se profissional está esgotado para a primeira data
+                    const firstDate = nextSixDates[0];
+                    const proSlots = slotsByProDateFirst[firstDate]?.[p];
+                    const isEsgotado = proSlots !== undefined && proSlots.length === 0;
+                    
+                    return (
+                      <SelectItem key={p} value={p}>
+                        {p}{isEsgotado && " - Esgotado para a data selecionada"}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </CardContent>
