@@ -209,14 +209,80 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      info_loja_public: {
+        Row: {
+          address: string | null
+          closing_time: string | null
+          escolha_serviços: string | null
+          id: string | null
+          instructions: string | null
+          maps_url: string | null
+          name: string | null
+          nome_profissionais: string | null
+          opening_time: string | null
+          slot_interval_minutes: number | null
+          url_insta: string | null
+          url_phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          closing_time?: string | null
+          escolha_serviços?: string | null
+          id?: string | null
+          instructions?: string | null
+          maps_url?: string | null
+          name?: string | null
+          nome_profissionais?: string | null
+          opening_time?: string | null
+          slot_interval_minutes?: number | null
+          url_insta?: string | null
+          url_phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          closing_time?: string | null
+          escolha_serviços?: string | null
+          id?: string | null
+          instructions?: string | null
+          maps_url?: string | null
+          name?: string | null
+          nome_profissionais?: string | null
+          opening_time?: string | null
+          slot_interval_minutes?: number | null
+          url_insta?: string | null
+          url_phone?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      app_role: "admin" | "user"
       status_agendamento_robusto:
         | "AGENDADO"
         | "REAGENDADO"
@@ -349,6 +415,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       status_agendamento_robusto: [
         "AGENDADO",
         "REAGENDADO",
