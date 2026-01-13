@@ -110,6 +110,27 @@ export type Database = {
         }
         Relationships: []
       }
+      categorias_produto: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string
+          ordem: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+        }
+        Relationships: []
+      }
       feriados: {
         Row: {
           data: string
@@ -176,6 +197,7 @@ export type Database = {
       produtos_loja: {
         Row: {
           ativo: boolean
+          categoria_id: string | null
           created_at: string
           foto_url: string | null
           id: string
@@ -187,6 +209,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          categoria_id?: string | null
           created_at?: string
           foto_url?: string | null
           id?: string
@@ -198,6 +221,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          categoria_id?: string | null
           created_at?: string
           foto_url?: string | null
           id?: string
@@ -207,7 +231,15 @@ export type Database = {
           quantidade?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "produtos_loja_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_produto"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
