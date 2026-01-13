@@ -54,6 +54,7 @@ export default function Reschedule() {
   const [newDate, setNewDate] = useState<Date | undefined>(undefined);
   const [professional, setProfessional] = useState<string>("");
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({});
+  const [slotsByProDateFirst, setSlotsByProDateFirst] = useState<Record<string, Record<string, string[]>>>({});
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [pros, setPros] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
@@ -236,6 +237,38 @@ export default function Reschedule() {
       setLoadingSlots(false);
     }
   }
+  
+  // Função para buscar slots de um profissional específico
+  async function fetchSlotsForProfessional(pro: string, dateStr: string): Promise<string[]> {
+    try {
+      const { data, error } = await supabase.functions.invoke("get-available-slots", {
+        body: {
+          date: dateStr,
+          professional: pro
+        }
+      });
+      if (error) throw error;
+      return data?.slots as string[] || [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Buscar slots por profissional para verificar disponibilidade (primeira data)
+  useEffect(() => {
+    if (!config || pros.length === 0 || nextSixDates.length === 0) return;
+    const firstDate = nextSixDates[0];
+    
+    const fetchAllProsSlots = async () => {
+      const results: Record<string, string[]> = {};
+      await Promise.all(pros.map(async (p) => {
+        results[p] = await fetchSlotsForProfessional(p, firstDate);
+      }));
+      setSlotsByProDateFirst(prev => ({ ...prev, [firstDate]: results }));
+    };
+    fetchAllProsSlots();
+  }, [config, pros, nextSixDates]);
+
   useEffect(() => {
     if (!config) return;
     fetchAllSlots();
@@ -498,7 +531,18 @@ export default function Reschedule() {
                   <SelectValue placeholder="Selecione um profissional" />
                 </SelectTrigger>
                 <SelectContent>
-                  {pros.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  {pros.map(p => {
+                    // Verificar se profissional está esgotado para a primeira data
+                    const firstDate = nextSixDates[0];
+                    const proSlots = slotsByProDateFirst[firstDate]?.[p];
+                    const isEsgotado = proSlots !== undefined && proSlots.length === 0;
+                    
+                    return (
+                      <SelectItem key={p} value={p}>
+                        {p}{isEsgotado && " - Esgotado para a data selecionada"}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </CardContent>

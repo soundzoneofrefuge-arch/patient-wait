@@ -14,9 +14,13 @@ export interface DateInputProps {
   onChange?: (date: Date | undefined) => void;
   placeholder?: string;
   className?: string;
+  disablePastDates?: boolean;
 }
 
-function DateInput({ value, onChange, placeholder = "dd/mm/aaaa", className }: DateInputProps) {
+function DateInput({ value, onChange, placeholder = "dd/mm/aaaa", className, disablePastDates = false }: DateInputProps) {
+  // Obter data de hoje para bloquear datas passadas
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const displayValue = value ? format(value, "dd/MM/yyyy", { locale: ptBR }) : "";
 
   return (
@@ -40,6 +44,7 @@ function DateInput({ value, onChange, placeholder = "dd/mm/aaaa", className }: D
           onSelect={onChange}
           initialFocus
           className="p-3 pointer-events-auto"
+          disabled={disablePastDates ? (date) => date < today : undefined}
           hideWeekdays
           classNames={{
             months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",

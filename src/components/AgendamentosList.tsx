@@ -93,6 +93,7 @@ export const AgendamentosList = () => {
                 onChange={setDataInicial}
                 placeholder="Selecionar data inicial"
                 className="bg-background border-border"
+                disablePastDates
               />
             </div>
             <div>
@@ -102,6 +103,7 @@ export const AgendamentosList = () => {
                 onChange={setDataFinal}
                 placeholder="Selecionar data final"
                 className="bg-background border-border"
+                disablePastDates
               />
             </div>
           </div>
