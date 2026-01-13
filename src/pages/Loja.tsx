@@ -5,12 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Plus, Trash2, ImageIcon, Store, Loader2, Minus } from "lucide-react";
 import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
 import { useCart } from "@/hooks/useCart";
 import { CartButton } from "@/components/CartButton";
 import { AddToCartDialog } from "@/components/AddToCartDialog";
+
+interface Categoria {
+  id: string;
+  nome: string;
+  ordem: number;
+}
 
 interface Produto {
   id: string;
@@ -20,6 +27,7 @@ interface Produto {
   ativo: boolean;
   ordem: number;
   quantidade: number;
+  categoria_id: string | null;
 }
 
 export default function Loja() {
@@ -33,6 +41,8 @@ export default function Loja() {
   const [novoNome, setNovoNome] = useState("");
   const [novoPreco, setNovoPreco] = useState("");
   const [novaQuantidade, setNovaQuantidade] = useState("");
+  const [novaCategoria, setNovaCategoria] = useState<string>("");
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -67,6 +77,25 @@ export default function Loja() {
     }
     
     checkAdmin();
+  }, []);
+
+  // Carregar categorias
+  useEffect(() => {
+    async function loadCategorias() {
+      try {
+        const { data, error } = await supabase
+          .from("categorias_produto")
+          .select("*")
+          .order("ordem", { ascending: true });
+        
+        if (error) throw error;
+        setCategorias(data || []);
+      } catch (error) {
+        console.error("Erro ao carregar categorias:", error);
+      }
+    }
+    
+    loadCategorias();
   }, []);
 
   // Carregar produtos
@@ -146,7 +175,8 @@ export default function Loja() {
           preco: novoPreco.trim(),
           foto_url: fotoUrl,
           ordem: produtos.length,
-          quantidade: parseInt(novaQuantidade) || 0
+          quantidade: parseInt(novaQuantidade) || 0,
+          categoria_id: novaCategoria || null
         })
         .select()
         .single();
@@ -157,6 +187,7 @@ export default function Loja() {
       setNovoNome("");
       setNovoPreco("");
       setNovaQuantidade("");
+      setNovaCategoria("");
       setSelectedFile(null);
       setPreviewUrl(null);
       toast.success("Produto adicionado!");
@@ -294,7 +325,7 @@ export default function Loja() {
                 Adicionar Produto
               </h2>
               
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome do Produto</Label>
                   <Input
@@ -328,6 +359,22 @@ export default function Loja() {
                     placeholder="Ex: 10"
                     className="bg-input/50 border-border/50"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="categoria">Categoria</Label>
+                  <Select value={novaCategoria} onValueChange={setNovaCategoria}>
+                    <SelectTrigger className="bg-input/50 border-border/50">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categorias.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="space-y-2">
