@@ -8,6 +8,7 @@ import { StatsCards } from "@/components/StatsCards";
 import { ChartsSection } from "@/components/ChartsSection";
 import { PainelAgendamentos } from "@/components/PainelAgendamentos";
 import { QuadroEfetivados } from "@/components/QuadroEfetivados";
+import { HorariosEspeciais } from "@/components/HorariosEspeciais";
 import { Button } from "@/components/ui/button";
 import { Store } from "lucide-react";
 
@@ -91,6 +92,11 @@ export const Dashboard = () => {
           <div className="grid gap-6 md:grid-cols-4">
             <QuadroEfetivados />
           </div>
+        </div>
+
+        {/* Horários Especiais */}
+        <div className="mb-8">
+          <HorariosEspeciais />
         </div>
 
         {/* Lista de Agendamentos Segmentados */}

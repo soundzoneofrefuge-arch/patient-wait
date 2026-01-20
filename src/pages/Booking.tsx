@@ -43,6 +43,16 @@ export default function Booking() {
   const [contact, setContact] = useState("");
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({});
   const [slotsByProDateFirst, setSlotsByProDateFirst] = useState<Record<string, Record<string, string[]>>>({});
+  const [specialInfoByDate, setSpecialInfoByDate] = useState<Record<string, {
+    isClosed?: boolean;
+    closedMessage?: string;
+    isSpecialHours?: boolean;
+    specialHoursMessage?: string;
+    specialHoursOpening?: string;
+    specialHoursClosing?: string;
+    isHoliday?: boolean;
+    holiday?: { descricao: string };
+  }>>({});
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState<any>(null);
   const [pros, setPros] = useState<string[]>([]);
@@ -162,10 +172,22 @@ export default function Booking() {
         throw error;
       }
       console.log('Slots retornados para', dStr, ':', data);
-      return data?.slots as string[] || [];
+      
+      // Retornar dados completos incluindo informações especiais
+      return {
+        slots: data?.slots as string[] || [],
+        isClosed: data?.isClosed || false,
+        closedMessage: data?.closedMessage || null,
+        isSpecialHours: data?.isSpecialHours || false,
+        specialHoursMessage: data?.specialHoursMessage || null,
+        specialHoursOpening: data?.specialHoursOpening || null,
+        specialHoursClosing: data?.specialHoursClosing || null,
+        isHoliday: data?.isHoliday || false,
+        holiday: data?.holiday || null
+      };
     } catch (err) {
       console.error('Erro na função fetchSlotsFor:', err);
-      return [];
+      return { slots: [], isClosed: false, isSpecialHours: false, isHoliday: false };
     }
   }
 
@@ -178,22 +200,38 @@ export default function Booking() {
     console.log('Profissional selecionado:', professional);
     setLoadingSlots(true);
     try {
-      const results: [string, string[]][] = await Promise.all(nextSixDates.map(async (d): Promise<[string, string[]]> => {
+      const results = await Promise.all(nextSixDates.map(async (d) => {
         try {
-          const s = await fetchSlotsFor(d);
-          console.log(`Slots para ${d}:`, s);
-          return [d, s];
+          const result = await fetchSlotsFor(d);
+          console.log(`Resultado para ${d}:`, result);
+          return { date: d, ...result };
         } catch (error) {
           console.error('Erro ao buscar slots para data', d, ':', error);
-          return [d, [] as string[]];
+          return { date: d, slots: [] as string[], isClosed: false, isSpecialHours: false, isHoliday: false };
         }
       }));
-      const map: Record<string, string[]> = {};
-      results.forEach(([d, s]) => {
-        map[d] = s;
+      
+      const slotsMap: Record<string, string[]> = {};
+      const specialInfoMap: Record<string, any> = {};
+      
+      results.forEach((r) => {
+        slotsMap[r.date] = r.slots;
+        specialInfoMap[r.date] = {
+          isClosed: r.isClosed,
+          closedMessage: r.closedMessage,
+          isSpecialHours: r.isSpecialHours,
+          specialHoursMessage: r.specialHoursMessage,
+          specialHoursOpening: r.specialHoursOpening,
+          specialHoursClosing: r.specialHoursClosing,
+          isHoliday: r.isHoliday,
+          holiday: r.holiday
+        };
       });
-      console.log('Mapa final de slots:', map);
-      setSlotsByDate(map);
+      
+      console.log('Mapa final de slots:', slotsMap);
+      console.log('Mapa de informações especiais:', specialInfoMap);
+      setSlotsByDate(slotsMap);
+      setSpecialInfoByDate(specialInfoMap);
     } catch (e: any) {
       console.error('Erro geral ao buscar slots:', e);
       toast.error("Erro ao buscar horários disponíveis.");
@@ -500,42 +538,71 @@ export default function Booking() {
           <CardContent>
             {!config ? <p className="text-sm text-muted-foreground">Carregando configurações...</p> : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {nextSixDates.map(d => (
-                  <div key={d} className="space-y-2">
-                     <div className="text-sm font-medium mx-[5px] my-[5px] py-[5px] px-[5px] rounded-sm">
-                      {format(new Date(d + 'T12:00:00'), "PPP", { locale: ptBR })}
+                {nextSixDates.map(d => {
+                  const specialInfo = specialInfoByDate[d];
+                  const isClosed = specialInfo?.isClosed;
+                  const isSpecialHours = specialInfo?.isSpecialHours;
+                  const isHoliday = specialInfo?.isHoliday;
+                  
+                  return (
+                    <div key={d} className="space-y-2">
+                      <div className="text-sm font-medium mx-[5px] my-[5px] py-[5px] px-[5px] rounded-sm">
+                        {format(new Date(d + 'T12:00:00'), "PPP", { locale: ptBR })}
+                      </div>
+                      
+                      {/* Alerta de Horário Especial */}
+                      {isSpecialHours && !isClosed && (
+                        <div className="p-2 rounded-md bg-warning/20 border border-warning/50 text-warning text-xs">
+                          <span className="font-semibold">⚠️ Horário Especial: </span>
+                          {specialInfo?.specialHoursOpening} - {specialInfo?.specialHoursClosing}
+                          {specialInfo?.specialHoursMessage && (
+                            <span className="block mt-1">{specialInfo.specialHoursMessage}</span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {loadingSlots ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="h-9 rounded-md bg-muted animate-pulse" />
+                          ))}
+                        </div>
+                      ) : isClosed ? (
+                        /* Loja Fechada - Mensagem em vermelho claro com letras brancas */
+                        <div className="p-3 rounded-md bg-red-400 text-white text-center font-semibold">
+                          {specialInfo?.closedMessage || "Loja Fechada"}
+                        </div>
+                      ) : isHoliday ? (
+                        /* Feriado */
+                        <div className="p-3 rounded-md bg-destructive/20 border border-destructive/50 text-destructive text-center text-sm">
+                          🎉 {specialInfo?.holiday?.descricao || "Feriado"}
+                        </div>
+                      ) : slotsByDate[d]?.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {slotsByDate[d].map(s => {
+                            const isSelected = selectedSlot === s && selectedDateStr === d;
+                            return (
+                              <Button
+                                key={s}
+                                variant={isSelected ? "default" : "secondary"}
+                                onClick={() => {
+                                  setSelectedSlot(s);
+                                  setSelectedDateStr(d);
+                                }}
+                                size="sm"
+                                className="mx-[4px] my-[4px] py-[4px] px-[4px] font-semibold text-base"
+                              >
+                                {s}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nenhum horário disponível.</p>
+                      )}
                     </div>
-                    {loadingSlots ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <div key={i} className="h-9 rounded-md bg-muted animate-pulse" />
-                        ))}
-                      </div>
-                    ) : slotsByDate[d]?.length ? (
-                      <div className="flex flex-wrap gap-2">
-                        {slotsByDate[d].map(s => {
-                          const isSelected = selectedSlot === s && selectedDateStr === d;
-                          return (
-                            <Button
-                              key={s}
-                              variant={isSelected ? "default" : "secondary"}
-                              onClick={() => {
-                                setSelectedSlot(s);
-                                setSelectedDateStr(d);
-                              }}
-                              size="sm"
-                              className="mx-[4px] my-[4px] py-[4px] px-[4px] font-semibold text-base"
-                            >
-                              {s}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Nenhum horário disponível.</p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
