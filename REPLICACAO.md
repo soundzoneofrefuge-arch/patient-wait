@@ -92,87 +92,144 @@ Você perceberá que com as chvaves configuradas na cloudfare, o site vai aparec
 
 ### 2️⃣ SUPABASE (10 min)
 
-#### A) Criar projeto
-- https://supabase.com/dashboard > New Project
-- Nome: `Cliente Agendamentos`
-- Region: `South America (São Paulo)`
-- Gerar senha forte → **SALVAR!**
+#### A) Criar projeto no Supabase
+1. Acesse: https://supabase.com/dashboard
+2. Clique em **"New Project"**
+3. Preencha:
+   - **Name**: `Cliente Agendamentos` (ou nome do cliente)
+   - **Database Password**: Gere senha forte → **SALVAR EM LOCAL SEGURO!**
+   - **Region**: `South America (São Paulo)` ⚠️ Sempre escolher São Paulo!
+4. Clique em **"Create new project"**
+5. Aguarde ~2 minutos para o projeto ser criado
 
-#### B) Copiar credenciais
+#### B) Copiar credenciais (GUARDAR!)
+1. Vá em: **Settings** (engrenagem) → **API**
+2. Copie e salve em local seguro:
+
 ```
-Settings > API:
-- PROJECT_URL: https://xxxxx.supabase.co
-- PROJECT_ID: xxxxx
-- ANON_KEY: eyJhbGc...
-- SERVICE_ROLE_KEY: eyJhbGc... (NUNCA EXPONHA!)
+PROJECT_URL: https://xxxxx.supabase.co
+PROJECT_ID: xxxxx (está na URL do projeto)
+ANON_KEY: eyJhbGc... (chave pública)
+SERVICE_ROLE_KEY: eyJhbGc... (⚠️ NUNCA EXPONHA PUBLICAMENTE!)
 ```
 
-#### C) Setup banco de dados
+#### C) Executar SQL de migração completa
+1. Vá em: **SQL Editor** (ícone de banco de dados) → **New Query**
+2. Abra o arquivo `supabase_migration_complete.sql` do projeto
+3. **⚠️ ANTES DE EXECUTAR**, edite a **PARTE 10** do SQL com os dados do cliente:
+
 ```sql
--- SQL Editor > New Query
--- Cole: supabase_setup_instructions.sql
--- ⚠️ EDITE ANTES DE EXECUTAR:
-
--- Linha 24 (auth_user):
-auth_user = 'admin@clientebarbearia.com'
-
--- Linhas 18-22 (dados da loja):
-INSERT INTO info_loja (...) VALUES (
-  'Barbearia do Cliente',              -- NOME
-  'Rua Exemplo, 123 - Cidade/UF',      -- ENDEREÇO
-  '(11) 98765-4321',                   -- TELEFONE
-  'https://maps.google.com/?q=...',    -- GOOGLE MAPS
-  '09:00:00',                          -- ABERTURA
-  '20:00:00',                          -- FECHAMENTO
-  60,                                  -- INTERVALO (minutos)
-  E'João\nMaria\nPedro',               -- PROFISSIONAIS
-  E'Corte\nBarba\nCorte + Barba',      -- SERVIÇOS
-  'admin@clientebarbearia.com'         -- EMAIL ADMIN
+-- ============================================
+-- PARTE 10: DADOS INICIAIS - INFORMAÇÕES DA LOJA
+-- ⚠️ EDITE ESSES VALORES ANTES DE EXECUTAR!
+-- ============================================
+INSERT INTO public.info_loja (
+    name,
+    address,
+    opening_time,
+    closing_time,
+    slot_interval_minutes,
+    nome_profissionais,
+    escolha_serviços,
+    instructions,
+    auth_user,
+    url_insta,
+    maps_url,
+    url_phone
+) VALUES (
+    'NOME DA BARBEARIA AQUI',           -- ⬅️ EDITAR: Nome do estabelecimento
+    'RUA, NÚMERO - CIDADE/UF',          -- ⬅️ EDITAR: Endereço completo
+    '09:00:00',                         -- ⬅️ EDITAR: Horário abertura (HH:MM:SS)
+    '20:00:00',                         -- ⬅️ EDITAR: Horário fechamento (HH:MM:SS)
+    60,                                 -- Intervalo entre agendamentos (minutos)
+    E'João\nMaria\nPedro',              -- ⬅️ EDITAR: Profissionais (um por linha com \n)
+    E'Corte\nBarba\nCorte + Barba',     -- ⬅️ EDITAR: Serviços (um por linha com \n)
+    'Chegar 10 minutos antes',          -- ⬅️ EDITAR: Instruções (opcional)
+    'admin@cliente.com',                -- ⬅️ EDITAR: Email do administrador
+    'https://instagram.com/cliente',    -- ⬅️ EDITAR: URL Instagram (ou NULL)
+    'https://maps.google.com/?q=...',   -- ⬅️ EDITAR: URL Google Maps (ou NULL)
+    'https://wa.me/5511999999999'       -- ⬅️ EDITAR: URL WhatsApp (ou NULL)
 );
-
--- RUN!
 ```
 
-⚠️ **SE DER ERRO "tabelas não existem"**: Rode primeiro `supabase_create_tables.sql` e depois rode `supabase_setup_instructions.sql` novamente.
+4. Após editar, clique em **"Run"** (ou Ctrl+Enter)
+5. ✅ Deve aparecer: "Success. No rows returned" (isso é normal!)
 
-#### D) Criar usuário admin
+#### D) Verificar se tabelas foram criadas
+1. Vá em: **Table Editor** (ícone de tabela)
+2. Verifique se existem as tabelas:
+   - ✅ `agendamentos_robustos`
+   - ✅ `info_loja`
+   - ✅ `feriados`
+   - ✅ `cadastro`
+   - ✅ `produtos_loja`
+   - ✅ `categorias_produto`
+   - ✅ `user_roles`
+   - ✅ `bd_ativo`
+
+3. Clique em `info_loja` e verifique se os dados do cliente estão lá
+
+#### E) Criar usuário administrador (MANUAL - OBRIGATÓRIO!)
+1. Vá em: **Authentication** → **Users**
+2. Clique em **"Add User"** → **"Create New User"**
+3. Preencha:
+   - **Email**: `admin@cliente.com` (⚠️ MESMO email usado no SQL!)
+   - **Password**: `SenhaSegura123!` (crie uma senha forte)
+   - ✅ Marque **"Auto Confirm User"**
+4. Clique em **"Create User"**
+5. **COPIE O USER ID** que aparece na lista (formato: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
+
+#### F) Atribuir role de admin ao usuário (MANUAL - OBRIGATÓRIO!)
+1. Vá em: **SQL Editor** → **New Query**
+2. Execute o seguinte SQL (substituindo o USER_ID):
+
+```sql
+-- ⚠️ SUBSTITUA 'USER_ID_AQUI' pelo ID copiado no passo anterior!
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('USER_ID_AQUI', 'admin');
 ```
-Authentication > Users > Add User:
-- Email: admin@clientebarbearia.com (MESMO do passo C)
-- Password: SenhaSegura123!
-- ✅ Auto Confirm User
+
+3. Clique em **"Run"**
+4. ✅ Deve aparecer: "Success. No rows returned"
+
+#### G) Verificar role foi atribuída
+```sql
+-- Execute no SQL Editor para confirmar:
+SELECT * FROM public.user_roles;
 ```
+Deve aparecer uma linha com o user_id e role = 'admin'
 
-#### E) GitHub Secrets
-```
-No GitHub do cliente:
-Settings > Secrets > Actions > New secret:
+#### H) Configurar Storage (para produtos)
+1. Vá em: **Storage** → verifique se existe o bucket `produtos`
+2. Se não existir, o SQL já criou automaticamente
+3. Verifique se está como **Public** (ícone de olho aberto)
 
-Nome: SUPABASE_ACCESS_TOKEN
-Valor: (gere em supabase.com/dashboard/account/tokens)
+#### I) GitHub Secrets (para deploy automático)
+1. No GitHub do cliente, vá em: **Settings** → **Secrets and variables** → **Actions**
+2. Clique em **"New repository secret"** e adicione:
 
-Nome: SUPABASE_PROJECT_ID  
-Valor: xxxxx (do passo B)
-```
+| Nome | Valor |
+|------|-------|
+| `SUPABASE_ACCESS_TOKEN` | Gere em: https://supabase.com/dashboard/account/tokens |
+| `SUPABASE_PROJECT_ID` | O ID do projeto (xxxxx) |
 
-#### F) Deploy Edge Functions (Automático)
+#### J) Deploy Edge Functions (Automático via GitHub Actions)
+O deploy acontece automaticamente quando você faz push para o repositório.
+
+Para forçar o deploy:
 ```bash
-# O deploy é AUTOMÁTICO via GitHub Actions
-# Basta fazer qualquer alteração em supabase/functions/ e fazer push:
-
-# Por exemplo, edite um comentário em qualquer Edge Function:
-# supabase/functions/book_slot/index.ts
+# Adicione um comentário em qualquer Edge Function
+# Por exemplo em: supabase/functions/book-slot/index.ts
 # Adicione: // deployed for cliente-nome
 
 git add .
-git commit -m "trigger deploy"
+git commit -m "deploy edge functions"
 git push origin main
-
-# Vá em: GitHub > Actions > Deploy Supabase Functions
-# Aguarde ~30 segundos para ver o workflow rodar
 ```
 
-✅ **Verificar deploy**: No Supabase Dashboard > Edge Functions, deve aparecer todas as functions deployadas.
+Verificar: **GitHub** → **Actions** → deve aparecer o workflow rodando
+
+✅ **Confirmar deploy**: No Supabase → **Edge Functions** → deve listar todas as functions
 
 ---
 
