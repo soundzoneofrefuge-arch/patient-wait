@@ -347,6 +347,7 @@ Verifique se as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` estão
 | `categorias_produto` | Categorias de produtos |
 | `produtos_loja` | Produtos da loja |
 | `bd_ativo` | Controle interno |
+| `horarios_especiais` | Horários especiais e fechamentos pontuais |
 
 ### Edge Functions
 
