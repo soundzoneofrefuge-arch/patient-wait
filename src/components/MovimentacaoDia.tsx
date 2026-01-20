@@ -291,6 +291,51 @@ export default function MovimentacaoDia() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [horaAtual, setHoraAtual] = useState(getBrazilTimeHHMM());
   const [horaAtualFull, setHoraAtualFull] = useState(getBrazilCurrentTime());
+  const [horariosPicoSemana, setHorariosPicoSemana] = useState<string[]>([]);
+
+  // Buscar horários de pico da semana (histórico)
+  const fetchHorariosPicoSemana = useCallback(async () => {
+    try {
+      // Calcular data de 7 dias atrás
+      const hoje = new Date();
+      const seteDiasAtras = new Date(hoje);
+      seteDiasAtras.setDate(hoje.getDate() - 7);
+      
+      const formatDate = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const { data, error } = await supabase
+        .from('agendamentos_robustos')
+        .select('HORA')
+        .gte('DATA', formatDate(seteDiasAtras))
+        .in('STATUS', ['AGENDADO', 'REAGENDADO', 'CONCLUÍDO']);
+
+      if (error) throw error;
+
+      // Contar frequência de cada horário
+      const contagem: Record<string, number> = {};
+      data?.forEach(item => {
+        if (item.HORA) {
+          const hora = item.HORA.toString().substring(0, 2);
+          contagem[hora] = (contagem[hora] || 0) + 1;
+        }
+      });
+
+      // Pegar os 3 horários mais frequentes da semana
+      const ordenados = Object.entries(contagem)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([hora]) => hora);
+
+      setHorariosPicoSemana(ordenados);
+    } catch (e) {
+      console.error("Erro ao buscar horários de pico da semana:", e);
+    }
+  }, []);
 
   const fetchMovement = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -314,9 +359,10 @@ export default function MovimentacaoDia() {
 
   useEffect(() => {
     fetchMovement(true);
+    fetchHorariosPicoSemana();
     const id = window.setInterval(() => fetchMovement(false), 15000);
     return () => window.clearInterval(id);
-  }, [fetchMovement]);
+  }, [fetchMovement, fetchHorariosPicoSemana]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -400,10 +446,7 @@ export default function MovimentacaoDia() {
     return Math.max(...agendamentosHoje.map((a) => a.count), 1);
   }, [agendamentosHoje]);
 
-  const horariosPico = useMemo(() => {
-    const ordenados = [...agendamentosHoje].sort((a, b) => b.count - a.count);
-    return ordenados.slice(0, 3).map((h) => h.hora);
-  }, [agendamentosHoje]);
+  // Nota: horariosPico do dia foi removido - agora usamos horariosPicoSemana (baseado nos últimos 7 dias)
 
   // Clientes para ilustração - BASEADO EM AGENDAMENTOS FUTUROS
   const clientesSentados = Math.min(agendamentosFuturos, 4);
@@ -576,12 +619,12 @@ export default function MovimentacaoDia() {
               </div>
             </div>
 
-            {/* Gráfico de horários populares - AGORA À DIREITA */}
+            {/* Gráfico de horários do dia - AGORA À DIREITA */}
             <div className="space-y-3 min-h-[260px] flex flex-col">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span className="font-medium flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Horários Populares
+                  Agendamentos do Dia
                 </span>
                 <span className="text-xs bg-muted/50 px-2 py-1 rounded">{horaAtual} - Agora</span>
               </div>
@@ -590,26 +633,32 @@ export default function MovimentacaoDia() {
                 {horariosOperacao.map((hora) => {
                   const count = movement?.byHour?.[hora] ?? 0;
                   const altura = count > 0 ? Math.max(15, (count / maxCount) * 100) : 8;
-                  const isPico = horariosPico.includes(hora) && count > 0;
+                  // Horário de pico da SEMANA (vermelho)
+                  const isPicoSemana = horariosPicoSemana.includes(hora) && count > 0;
+                  // Horário agendado do dia (laranja)
+                  const temAgendamento = count > 0;
 
                   return (
                     <div key={hora} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                      <span className="text-[10px] text-muted-foreground font-medium">
+                      <span className={cn(
+                        "text-[10px] font-medium",
+                        isPicoSemana ? "text-white" : temAgendamento ? "text-white" : "text-muted-foreground"
+                      )}>
                         {count > 0 ? count : ""}
                       </span>
                       <div
                         className={cn(
                           "w-full rounded-t-sm transition-all duration-500 relative",
-                          isPico
-                            ? "bg-gradient-to-t from-destructive to-destructive/70"
-                            : count > 0
-                              ? "bg-gradient-to-t from-primary to-primary/70"
+                          isPicoSemana
+                            ? "bg-gradient-to-t from-destructive to-destructive/80"
+                            : temAgendamento
+                              ? "bg-gradient-to-t from-warning to-warning/80"
                               : "bg-muted/40"
                         )}
                         style={{ height: `${altura}%` }}
-                        title={`${hora}h: ${count} agendamento(s)`}
+                        title={`${hora}h: ${count} agendamento(s)${isPicoSemana ? ' (Pico da semana)' : ''}`}
                       >
-                        {isPico && count > 0 && (
+                        {isPicoSemana && count > 0 && (
                           <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-destructive rounded-full animate-pulse" />
                         )}
                       </div>
@@ -628,12 +677,12 @@ export default function MovimentacaoDia() {
 
               <div className="flex items-center gap-6 text-xs text-muted-foreground pt-3 border-t border-border/30 mt-auto">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-gradient-to-t from-destructive to-destructive/70 rounded-sm" />
-                  <span>Horário de pico</span>
+                  <div className="w-3 h-3 bg-gradient-to-t from-destructive to-destructive/80 rounded-sm" />
+                  <span>Pico da semana</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-gradient-to-t from-primary to-primary/70 rounded-sm" />
-                  <span>Normal</span>
+                  <div className="w-3 h-3 bg-gradient-to-t from-warning to-warning/80 rounded-sm" />
+                  <span>Agendado hoje</span>
                 </div>
               </div>
             </div>
