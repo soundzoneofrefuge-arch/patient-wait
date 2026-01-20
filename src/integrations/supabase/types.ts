@@ -146,6 +146,36 @@ export type Database = {
         }
         Relationships: []
       }
+      horarios_especiais: {
+        Row: {
+          created_at: string | null
+          data: string
+          horario_abertura: string | null
+          horario_fechamento: string | null
+          id: string
+          mensagem: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          data: string
+          horario_abertura?: string | null
+          horario_fechamento?: string | null
+          id?: string
+          mensagem?: string | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          horario_abertura?: string | null
+          horario_fechamento?: string | null
+          id?: string
+          mensagem?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       info_loja: {
         Row: {
           address: string | null

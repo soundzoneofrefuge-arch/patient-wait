@@ -57,6 +57,29 @@ serve(async (req) => {
       );
     }
 
+    // Verificar horários especiais primeiro
+    const { data: horarioEspecial, error: horarioEspecialErr } = await supabase
+      .from("horarios_especiais")
+      .select("*")
+      .eq("data", date)
+      .maybeSingle();
+    
+    if (horarioEspecialErr) {
+      console.error("Erro ao buscar horário especial:", horarioEspecialErr);
+    }
+
+    // Se a loja está fechada neste dia
+    if (horarioEspecial?.tipo === "fechado") {
+      return new Response(
+        JSON.stringify({ 
+          slots: [], 
+          isClosed: true,
+          closedMessage: horarioEspecial.mensagem || "Loja Fechada"
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Feriados
     const { data: feriado, error: feriadoErr } = await supabase
       .from("feriados")
@@ -85,13 +108,31 @@ serve(async (req) => {
       });
     }
 
-    // Intervalo padrão 60min se não definido
-    const opening = typeof config.opening_time === "string" ? config.opening_time : String(config.opening_time);
-    const closing = typeof config.closing_time === "string" ? config.closing_time : String(config.closing_time);
+    // Usar horários especiais se existir, senão usar config padrão
+    let opening: string;
+    let closing: string;
+    let isSpecialHours = false;
+    let specialHoursMessage: string | null = null;
+
+    if (horarioEspecial?.tipo === "horario_especial") {
+      opening = typeof horarioEspecial.horario_abertura === "string" 
+        ? horarioEspecial.horario_abertura 
+        : String(horarioEspecial.horario_abertura);
+      closing = typeof horarioEspecial.horario_fechamento === "string" 
+        ? horarioEspecial.horario_fechamento 
+        : String(horarioEspecial.horario_fechamento);
+      isSpecialHours = true;
+      specialHoursMessage = horarioEspecial.mensagem;
+      console.log('Usando horário especial:', { opening, closing, message: specialHoursMessage });
+    } else {
+      opening = typeof config.opening_time === "string" ? config.opening_time : String(config.opening_time);
+      closing = typeof config.closing_time === "string" ? config.closing_time : String(config.closing_time);
+    }
+
     const interval = config.slot_interval_minutes ?? 60;
 
     const startM = toMinutes(opening);
-    const endM = toMinutes("21:00"); // Fixar horário final em 21:00
+    const endM = toMinutes(closing);
     const slots: string[] = [];
     for (let t = startM; t + interval <= endM; t += interval) {
       slots.push(toHHMM(t));
@@ -164,8 +205,17 @@ serve(async (req) => {
       });
     }
 
+    // Montar resposta com informações de horário especial
+    const response: any = { slots: available };
+    if (isSpecialHours) {
+      response.isSpecialHours = true;
+      response.specialHoursMessage = specialHoursMessage;
+      response.specialHoursOpening = opening.slice(0, 5);
+      response.specialHoursClosing = closing.slice(0, 5);
+    }
+
     return new Response(
-      JSON.stringify({ slots: available }),
+      JSON.stringify(response),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (e) {
