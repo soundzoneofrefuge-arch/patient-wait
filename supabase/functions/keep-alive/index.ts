@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Faz uma consulta simples na tabela que sabemos que existe para gerar atividade
+    // Faz uma consulta simples na tabela que sabemos que existe para gerar atividade e mante-la acordada
     const { error } = await supabase
       .from('agendamentos_robustos')
       .select('id')
