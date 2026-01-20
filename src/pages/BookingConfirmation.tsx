@@ -51,150 +51,234 @@ export default function BookingConfirmation() {
       </Card>
     </div>;
   }
-  return <div className="min-h-screen bg-cover bg-center bg-no-repeat relative" style={{
-    backgroundImage: `url(${authBackground})`
-  }}>
-    <div className="absolute inset-0 bg-black/50"></div>
-    
-    <main className="container mx-auto px-6 py-8 relative z-10">
-      <header className="mb-8 text-center relative">
-        <Button variant="outline" className="absolute top-0 left-0 flex items-center gap-2" onClick={() => navigate("/")}>
-          <ArrowLeft className="h-4 w-4" />
-          Início
-        </Button>
-        <h1 className="text-3xl font-bold text-primary">Agendamento Confirmado</h1>
-      </header>
+  return (
+    <>
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          body { 
+            margin: 0 !important; 
+            padding: 0 !important; 
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .no-print { display: none !important; }
+          .print-container {
+            min-height: auto !important;
+            background: white !important;
+            padding: 8px !important;
+          }
+          .print-container > div:first-child { display: none !important; }
+          main { padding: 4px 8px !important; }
+          .print-card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+            background: white !important;
+          }
+          .print-card * {
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+          }
+          .print-card h1, .print-card h2, .print-card h3 {
+            font-size: 13px !important;
+            margin: 4px 0 !important;
+          }
+          .print-card .text-3xl {
+            font-size: 18px !important;
+          }
+          .print-card .text-2xl {
+            font-size: 14px !important;
+          }
+          .print-card .p-3, .print-card .p-4 {
+            padding: 4px !important;
+          }
+          .print-card .space-y-6 > * + * {
+            margin-top: 6px !important;
+          }
+          .print-card .space-y-4 > * + * {
+            margin-top: 4px !important;
+          }
+          .print-card .gap-4 {
+            gap: 4px !important;
+          }
+          .print-card .mb-4 {
+            margin-bottom: 4px !important;
+          }
+          .print-card .pt-6 {
+            padding-top: 6px !important;
+          }
+          .print-card .w-16 {
+            width: 32px !important;
+            height: 32px !important;
+          }
+          .print-card .w-8 {
+            width: 20px !important;
+            height: 20px !important;
+          }
+          .print-card .w-5 {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .print-card ul {
+            margin: 0 !important;
+            padding-left: 8px !important;
+          }
+          .print-card li {
+            margin: 2px 0 !important;
+          }
+          @page {
+            size: A4;
+            margin: 10mm;
+          }
+        }
+      `}</style>
       
-      <div className="max-w-2xl mx-auto">
-        <Card className="bg-card/95 backdrop-blur-sm border-primary/40">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-8 h-8 text-primary" />
-              </div>
-              <CardTitle className="text-2xl text-primary">
-                Agendamento Confirmado!
-              </CardTitle>
-              <div className="text-lg font-medium text-foreground mt-2">
-                {bookingData.name}
-              </div>
-              <p className="text-muted-foreground bg-white">
-                Seu horário foi reservado com sucesso
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6 mx-0">
-              {/* Detalhes do agendamento */}
-              <div className="grid gap-4">
-                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg py-[5px]">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Data</p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(bookingData.date), "PPPP", {
-                      locale: ptBR
-                    })}
-                    </p>
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat relative print-container" style={{
+        backgroundImage: `url(${authBackground})`
+      }}>
+        <div className="absolute inset-0 bg-black/50"></div>
+        
+        <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
+          <header className="mb-6 sm:mb-8 text-center relative no-print">
+            <Button variant="outline" className="absolute top-0 left-0 flex items-center gap-2" onClick={() => navigate("/")}>
+              <ArrowLeft className="h-4 w-4" />
+              Início
+            </Button>
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Agendamento Confirmado</h1>
+          </header>
+          
+          <div className="max-w-2xl mx-auto">
+            <Card className="bg-card/95 backdrop-blur-sm border-primary/40 print-card">
+                <CardHeader className="text-center pb-2 sm:pb-4">
+                  <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2 sm:mb-4">
+                    <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                   </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg py-[5px]">
-                  <Clock className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Horário</p>
-                    <p className="text-sm text-muted-foreground">{bookingData.time}</p>
+                  <CardTitle className="text-xl sm:text-2xl text-primary">
+                    Agendamento Confirmado!
+                  </CardTitle>
+                  <div className="text-base sm:text-lg font-medium text-foreground mt-1 sm:mt-2">
+                    {bookingData.name}
                   </div>
-                </div>
+                  <p className="text-muted-foreground text-sm">
+                    Seu horário foi reservado com sucesso
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4 sm:space-y-6 pt-0">
+                  {/* Detalhes do agendamento */}
+                  <div className="grid gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/50 rounded-lg">
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">Data</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                          {format(new Date(bookingData.date), "PPPP", {
+                          locale: ptBR
+                        })}
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg py-[5px]">
-                  <User className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Profissional</p>
-                    <p className="text-sm text-muted-foreground">{bookingData.professional}</p>
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/50 rounded-lg">
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-sm">Horário</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{bookingData.time}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/50 rounded-lg">
+                      <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-sm">Profissional</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{bookingData.professional}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/50 rounded-lg">
+                      <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-sm">Serviço</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{bookingData.service}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/50 rounded-lg">
+                      <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-sm">Contato</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{bookingData.contact}</p>
+                      </div>
+                    </div>
+
+                    {bookingData.senha && (
+                      <div className="p-3 sm:p-4 bg-primary/20 rounded border-2 border-primary text-center">
+                        <div className="text-xs sm:text-sm font-bold text-primary mb-1 sm:mb-2">ATENÇÃO!!!</div>
+                        <div className="text-sm text-foreground mb-1 sm:mb-2">Guarde esta SENHA para reagendar ou cancelar:</div>
+                        <div className="text-2xl sm:text-3xl font-bold tracking-wider font-mono text-primary">{bookingData.senha}</div>
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg py-[5px]">
-                  <Briefcase className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Serviço</p>
-                    <p className="text-sm text-muted-foreground">{bookingData.service}</p>
+                  {/* Informações da loja */}
+                  {storeInfo && <div className="border-t pt-4 sm:pt-6">
+                      <h3 className="font-semibold mb-2 sm:mb-4 text-sm">Informações da loja</h3>
+                      <div className="space-y-2 sm:space-y-4">
+                        {storeInfo.address && <div className="flex items-start gap-2 sm:gap-3">
+                            <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-sm">Endereço</p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">{storeInfo.address}</p>
+                            </div>
+                          </div>}
+                        
+                        {storeInfo.phone && <div className="flex items-center gap-2 sm:gap-3">
+                            <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-sm">Telefone</p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">{storeInfo.phone}</p>
+                            </div>
+                          </div>}
+                        
+                        {storeInfo.maps_url && <Button onClick={() => window.open(storeInfo.maps_url, '_blank')} variant="outline" size="sm" className="w-full no-print">
+                            <MapPin className="h-4 w-4 mr-2" />
+                            Ver no mapa
+                          </Button>}
+                        
+                        {storeInfo.instructions && <div className="flex items-start gap-2 sm:gap-3">
+                            <FileText className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-sm">Instruções</p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">{storeInfo.instructions}</p>
+                            </div>
+                          </div>}
+                      </div>
+                    </div>}
+
+                  {/* Orientações */}
+                  <div className="border-t pt-4 sm:pt-6">
+                    <h3 className="font-semibold mb-2 sm:mb-3 text-sm">Orientações importantes:</h3>
+                    <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-muted-foreground">
+                      <li>• Chegue com 10 minutos de antecedência.</li>
+                      <li>• Aceitamos pagamento em dinheiro, Pix e cartões de crédito/débito.</li>
+                      <li>• Em caso de cancelamento, entre em contato com antecedência.</li>
+                      <li>• A tolerância para atrasos é de 15 minutos. Após esse tempo, o horário será cancelado e será necessário um novo agendamento.</li>
+                    </ul>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg py-[5px]">
-                  <Phone className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Contato</p>
-                    <p className="text-sm text-muted-foreground">{bookingData.contact}</p>
+                  {/* Ações */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4 no-print">
+                    <Button variant="outline" className="flex-1 text-sm" onClick={() => navigate("/")}>
+                      Novo Agendamento
+                    </Button>
+                    <Button className="flex-1 text-sm" onClick={() => window.print()}>
+                      Imprimir Comprovante
+                    </Button>
                   </div>
-                </div>
-
-                {bookingData.senha && (
-                  <div className="p-4 bg-primary/20 rounded border-2 border-primary text-center">
-                    <div className="text-sm font-bold text-primary mb-2">ATENÇÃO!!!</div>
-                    <div className="text-base text-foreground mb-2">Guarde esta SENHA para reagendar ou cancelar:</div>
-                    <div className="text-3xl font-bold tracking-wider font-mono text-primary">{bookingData.senha}</div>
-                  </div>
-                )}
-              </div>
-
-              {/* Informações da loja */}
-              {storeInfo && <div className="border-t pt-6 py-[5px]">
-                  <h3 className="font-semibold mb-4">Informações da loja</h3>
-                  <div className="space-y-4">
-                    {storeInfo.address && <div className="flex items-start gap-3">
-                        <MapPin className="h-4 w-4 mt-1 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Endereço</p>
-                          <p className="text-sm text-muted-foreground">{storeInfo.address}</p>
-                        </div>
-                      </div>}
-                    
-                    {storeInfo.phone && <div className="flex items-center gap-3">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Telefone</p>
-                          <p className="text-sm text-muted-foreground">{storeInfo.phone}</p>
-                        </div>
-                      </div>}
-                    
-                    {storeInfo.maps_url && <Button onClick={() => window.open(storeInfo.maps_url, '_blank')} variant="outline" size="sm" className="w-full">
-                        <MapPin className="h-4 w-4 mr-2" />
-                        Ver no mapa
-                      </Button>}
-                    
-                    {storeInfo.instructions && <div className="flex items-start gap-3">
-                        <FileText className="h-4 w-4 mt-1 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Instruções</p>
-                          <p className="text-sm text-muted-foreground">{storeInfo.instructions}</p>
-                        </div>
-                      </div>}
-                  </div>
-                </div>}
-
-              {/* Orientações */}
-              <div className="border-t pt-6">
-                <h3 className="font-semibold mb-3">Orientações importantes:</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Chegue com 10 minutos de antecedência.</li>
-                  <li>• Aceitamos pagamento em dinheiro, Pix e cartões de crédito/débito.</li>
-                  <li>• Em caso de cancelamento, entre em contato com antecedência.</li>
-                  <li>• A tolerância para atrasos é de 15 minutos Após esse tempo, o horário será cancelado e será necessário um novo agendamento.</li>
-                </ul>
-              </div>
-
-              {/* Ações */}
-              <div className="flex gap-3 pt-4 py-[10px]">
-                <Button variant="outline" className="flex-1" onClick={() => navigate("/")}>
-                  Novo Agendamento
-                </Button>
-                <Button className="flex-1" onClick={() => window.print()}>
-                  Imprimir Comprovante
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
         </div>
-      </main>
-    </div>;
+    </>
+  );
 }

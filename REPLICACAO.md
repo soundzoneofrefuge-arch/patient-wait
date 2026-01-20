@@ -166,6 +166,7 @@ INSERT INTO public.info_loja (
    - ✅ `categorias_produto`
    - ✅ `user_roles`
    - ✅ `bd_ativo`
+   - ✅ `horarios_especiais`
 
 3. Clique em `info_loja` e verifique se os dados do cliente estão lá
 

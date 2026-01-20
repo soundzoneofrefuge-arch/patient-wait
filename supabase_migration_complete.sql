@@ -142,6 +142,22 @@ CREATE TABLE IF NOT EXISTS public.produtos_loja (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- 3.9 Tabela: horarios_especiais
+-- Armazena horários especiais e fechamentos pontuais
+CREATE TABLE IF NOT EXISTS public.horarios_especiais (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    data DATE NOT NULL UNIQUE,
+    tipo TEXT NOT NULL CHECK (tipo IN ('horario_especial', 'fechado')),
+    mensagem TEXT,
+    horario_abertura TIME WITHOUT TIME ZONE,
+    horario_fechamento TIME WITHOUT TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    CONSTRAINT horarios_especiais_check CHECK (
+        (tipo = 'fechado') OR 
+        (tipo = 'horario_especial' AND horario_abertura IS NOT NULL AND horario_fechamento IS NOT NULL)
+    )
+);
+
 -- ============================================
 -- PARTE 4: ÍNDICES
 -- ============================================
@@ -219,6 +235,7 @@ ALTER TABLE public.bd_ativo ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categorias_produto ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.produtos_loja ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.horarios_especiais ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- PARTE 8: POLÍTICAS RLS
@@ -358,6 +375,29 @@ CREATE POLICY "Admins can delete products"
     ON public.produtos_loja FOR DELETE
     USING (is_admin());
 
+-- 8.9 Políticas para horarios_especiais
+DROP POLICY IF EXISTS "Public can read horarios_especiais" ON public.horarios_especiais;
+DROP POLICY IF EXISTS "Admins can insert horarios_especiais" ON public.horarios_especiais;
+DROP POLICY IF EXISTS "Admins can update horarios_especiais" ON public.horarios_especiais;
+DROP POLICY IF EXISTS "Admins can delete horarios_especiais" ON public.horarios_especiais;
+
+CREATE POLICY "Public can read horarios_especiais"
+    ON public.horarios_especiais FOR SELECT
+    USING (true);
+
+CREATE POLICY "Admins can insert horarios_especiais"
+    ON public.horarios_especiais FOR INSERT
+    WITH CHECK (is_admin());
+
+CREATE POLICY "Admins can update horarios_especiais"
+    ON public.horarios_especiais FOR UPDATE
+    USING (is_admin())
+    WITH CHECK (is_admin());
+
+CREATE POLICY "Admins can delete horarios_especiais"
+    ON public.horarios_especiais FOR DELETE
+    USING (is_admin());
+
 -- ============================================
 -- PARTE 9: STORAGE BUCKETS
 -- ============================================
@@ -482,7 +522,8 @@ AND tablename IN (
     'bd_ativo',
     'user_roles',
     'categorias_produto',
-    'produtos_loja'
+    'produtos_loja',
+    'horarios_especiais'
 )
 ORDER BY tablename;
 
