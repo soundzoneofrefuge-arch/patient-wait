@@ -3,9 +3,26 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 export const Header = () => {
   const navigate = useNavigate();
+  const [storeName, setStoreName] = useState<string>("");
+
+  useEffect(() => {
+    const fetchStoreName = async () => {
+      const { data } = await supabase
+        .from('info_loja')
+        .select('name')
+        .limit(1)
+        .single();
+      
+      if (data?.name) {
+        setStoreName(data.name);
+      }
+    };
+    fetchStoreName();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -34,7 +51,7 @@ export const Header = () => {
             </div>
             <div>
               <h1 className="text-2xl md:text-4xl font-bold text-foreground tracking-tight">
-                Dashboard <span className="text-gradient">ASPERUS</span>
+                Dashboard <span className="text-gradient">{storeName || "ASPERUS"}</span>
               </h1>
               <p className="text-muted-foreground mt-1 md:mt-2 text-sm md:text-base">
                 Painel de controle para agendamentos
