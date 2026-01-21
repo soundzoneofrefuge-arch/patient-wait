@@ -20,6 +20,7 @@ import ContactInfo from "@/components/ContactInfo";
 import MovimentacaoDia from "@/components/MovimentacaoDia";
 
 interface LojaConfig {
+  name?: string;
   opening_time?: string;
   closing_time?: string;
   slot_interval_minutes?: number;
@@ -417,7 +418,7 @@ export default function Booking() {
           {/* Título responsivo */}
           <div className="space-y-2">
             <h1 className="font-bold text-primary text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
-              Agendar Atendimento
+              {config?.name || "Agendar Atendimento"}
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base">
               Informe Seus Dados para Agendamento
