@@ -243,7 +243,7 @@ A expressão `0 0 * * 1,5` define que a função será executada:
 * Todas as **segundas-feiras** às 00:00.
 * Todas as **sextas-feiras** às 00:00.
 
-Este intervalo de 3 a 4 dias garante que o projeto nunca atinja o limite de 7 dias de inatividade total.
+Este intervalo de 3 a 5 dias garante que o projeto nunca atinja o limite de 7 dias de inatividade total.
 
 ## 4. Funcionamento Interno
 O fluxo de atividade segue o seguinte caminho para garantir que o banco de dados seja considerado "ativo":
