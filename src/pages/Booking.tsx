@@ -69,8 +69,10 @@ export default function Booking() {
   }, [contact, name, selectedSlot, selectedDateStr, professional, service]);
 
   useEffect(() => {
-    document.title = "Agendar atendimento | ÁSPERUS";
-  }, []);
+    if (config?.name) {
+      document.title = `${config.name} | Agendamento`;
+    }
+  }, [config?.name]);
 
   // Carregar configuração
   useEffect(() => {
@@ -417,7 +419,7 @@ export default function Booking() {
           
           {/* Título responsivo */}
           <div className="space-y-2">
-            <h1 className="font-bold text-primary text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
+            <h1 className="font-bold text-primary text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
               {config?.name || "Agendar Atendimento"}
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base">
