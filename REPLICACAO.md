@@ -169,6 +169,7 @@ INSERT INTO public.info_loja (
    - ✅ `horarios_especiais`
 
 3. Clique em `info_loja` e verifique se os dados do cliente estão lá
+4. Não esquece de verificar se o Enable Reatime das tabelas estão ativados
 
 #### E) Criar usuário administrador (MANUAL - OBRIGATÓRIO!)
 1. Vá em: **Authentication** → **Users**
