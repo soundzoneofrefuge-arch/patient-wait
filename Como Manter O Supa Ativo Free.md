@@ -10,7 +10,7 @@ O sistema é composto por dois pilares:
 
    O CÓDIGO:
 
-   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+   ` ` `import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       status: 400
     });
   }
-});
+});` ` `
 
 ## 3. Configuração do Cron Job
 Acesse o Dashboard do Supabase > **Database** > **Cron Jobs** e crie um novo agendador com as seguintes especificações:
