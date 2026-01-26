@@ -50,7 +50,8 @@ Deno.serve(async (req) => {
       status: 400
     });
   }
-});```typescript
+});
+```
 
 ## 3. Configuração do Cron Job
 Acesse o Dashboard do Supabase > **Database** > **Cron Jobs** e crie um novo agendador com as seguintes especificações:
