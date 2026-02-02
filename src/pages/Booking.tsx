@@ -209,15 +209,18 @@ export default function Booking() {
     setSelectedSlot(null);
     setSelectedDateCard(dateStr);
     
-    // Buscar slots para a data clicada
-    fetchSlotsForDate(dateStr);
-  }, [fetchSlotsForDate]);
+    // Só buscar slots se profissional já estiver selecionado
+    if (professional) {
+      fetchSlotsForDate(dateStr);
+    }
+  }, [fetchSlotsForDate, professional]);
 
-  // Rebuscar slots quando profissional mudar (se já há data selecionada)
+  // Buscar slots quando profissional mudar (se já há data selecionada)
   useEffect(() => {
-    if (selectedDateCard && config) {
+    if (selectedDateCard && professional && config) {
       // Limpar slot selecionado pois profissional mudou
       setSelectedSlot(null);
+      setSlotsForSelectedDate([]);
       fetchSlotsForDate(selectedDateCard);
     }
   }, [professional]);
@@ -505,12 +508,17 @@ export default function Booking() {
         {/* Horários - Mostrar APENAS quando uma data for selecionada */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Horários Disponíveis</CardTitle>
+          <CardTitle>Horários Disponíveis</CardTitle>
           </CardHeader>
           <CardContent>
-            {!selectedDateCard ? (
+            {!selectedDateCard || !professional ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Selecione uma data acima para ver os horários disponíveis
+                {!selectedDateCard && !professional 
+                  ? "Selecione uma data e um profissional para ver os horários"
+                  : !selectedDateCard 
+                    ? "Selecione uma data para ver os horários"
+                    : "Selecione um profissional para ver os horários"
+                }
               </p>
             ) : loadingSlots ? (
               <div className="flex items-center justify-center py-8">
