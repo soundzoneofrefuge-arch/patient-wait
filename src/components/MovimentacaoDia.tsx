@@ -238,13 +238,14 @@ function ClienteSentado({ toneClass, showBubble, horario, profissional }: { tone
 }
 
 // Cliente em pé / andando com nome do barbeiro e horário
-function ClienteAndando({ toneClass, walking, showBubble, horario, profissional }: { toneClass: string; walking?: boolean; showBubble?: boolean; horario?: string; profissional?: string }) {
+function ClienteAndando({ toneClass, walking, showBubble, horario, profissional, ghost }: { toneClass: string; walking?: boolean; showBubble?: boolean; horario?: string; profissional?: string; ghost?: boolean }) {
   return (
     <svg
       viewBox="0 0 32 64"
       className={cn("w-6 h-16 drop-shadow-sm", walking && "animate-pulse")}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      style={ghost ? { opacity: 0.4, filter: "blur(0.5px)" } : {}}
     >
       {/* Nome do barbeiro e horário - texto sem fundo */}
       {(showBubble || horario || profissional) && (
@@ -527,9 +528,10 @@ export default function MovimentacaoDia() {
     const agendamentosHoraAtual = byHourProfissional[horaKey] ?? [];
     
     // Mapeamento de profissionais conhecidos (para as cadeiras)
+    // Cadeira ESQUERDA = João, Cadeira DIREITA = Jacson
     const profissionaisMap: Record<string, { toneClass: string; position: "left" | "right" }> = {
-      "Jacson": { toneClass: "fill-warning", position: "left" },
-      "João": { toneClass: "fill-primary", position: "right" },
+      "João": { toneClass: "fill-primary", position: "left" },
+      "Jacson": { toneClass: "fill-warning", position: "right" },
     };
     
     // Determinar quais cadeiras estão ocupadas
@@ -726,17 +728,19 @@ export default function MovimentacaoDia() {
                 </div>
 
                 {/* Barbeiros - só aparecem se houver cliente */}
+                {/* Esquerda = João */}
                 {atendimentosAtuais.find(a => a.position === "left") && (
                   <div className="absolute top-12 left-[30%]">
                     <div className="crew-bob">
-                      <Barber color="fill-warning" nome="João" />
+                      <Barber color="fill-primary" nome="João" />
                     </div>
                   </div>
                 )}
+                {/* Direita = Jacson */}
                 {atendimentosAtuais.find(a => a.position === "right") && (
                   <div className="absolute top-12 right-[30%]">
                     <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
-                      <Barber color="fill-primary" flip nome="Jacson" />
+                      <Barber color="fill-warning" flip nome="Jacson" />
                     </div>
                   </div>
                 )}
@@ -764,9 +768,13 @@ export default function MovimentacaoDia() {
                 ))}
 
                 {/* Clientes em pé / andando - com horários */}
+                {/* A partir do 5º agendamento (índice 4+), o banco está cheio e os clientes ficam "fantasmas" */}
                 {agendamentosEsperando.slice(clientesSentados, clientesSentados + clientesEmPe).map((agendamento, i) => {
                   const spot = wanderSpots[i % wanderSpots.length];
                   const tone = clienteTones[(i + clientesSentados) % clienteTones.length];
+                  // Efeito fantasma: a partir do 5º agendamento (índice 4 no array original = índice 0 aqui após slice dos 4 sentados)
+                  // Ou seja, todos os clientes em pé são "fantasmas" pois o banco já está cheio
+                  const isGhost = true; // Todos em pé são fantasmas (banco cheio com 4)
 
                   return (
                     <div
@@ -791,6 +799,7 @@ export default function MovimentacaoDia() {
                             walking 
                             horario={agendamento.hora}
                             profissional={agendamento.profissional}
+                            ghost={isGhost}
                           />
                         </div>
                       </div>
