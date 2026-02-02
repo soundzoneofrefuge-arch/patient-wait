@@ -1,12 +1,19 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, getBrazilDateString } from "../_shared/utils.ts";
+import { corsHeaders, getBrazilDateString, getBrazilTimeString } from "../_shared/utils.ts";
+
+type AgendamentoHora = {
+  hora: string;
+  profissional: string;
+};
 
 type MovementResponse = {
   date: string;
   total: number;
   byHour: Record<string, number>; // "09" -> 2
+  byHourProfissional: Record<string, AgendamentoHora[]>; // "15" -> [{hora: "15:00", profissional: "Jacson"}, ...]
+  horaAtual: string; // "15:30"
 };
 
 serve(async (req) => {
@@ -34,25 +41,43 @@ serve(async (req) => {
     }
 
     const dateToUse = date ?? getBrazilDateString();
+    const horaAtual = getBrazilTimeString();
 
     const { data, error } = await supabase
       .from("agendamentos_robustos")
-      .select("HORA, STATUS")
+      .select("HORA, STATUS, PROFISSIONAL")
       .eq("DATA", dateToUse)
       .in("STATUS", ["AGENDADO", "REAGENDADO"]);
 
     if (error) throw error;
 
     const byHour: Record<string, number> = {};
+    const byHourProfissional: Record<string, AgendamentoHora[]> = {};
+    
     for (const row of data ?? []) {
-      const hora = String((row as any).HORA ?? "00:00:00").slice(0, 2);
-      byHour[hora] = (byHour[hora] ?? 0) + 1;
+      const horaCompleta = String((row as any).HORA ?? "00:00:00");
+      const horaKey = horaCompleta.slice(0, 2);
+      const profissional = String((row as any).PROFISSIONAL ?? "");
+      
+      // Contagem simples por hora
+      byHour[horaKey] = (byHour[horaKey] ?? 0) + 1;
+      
+      // Lista de profissionais por hora
+      if (!byHourProfissional[horaKey]) {
+        byHourProfissional[horaKey] = [];
+      }
+      byHourProfissional[horaKey].push({
+        hora: horaCompleta.slice(0, 5), // "15:00"
+        profissional: profissional,
+      });
     }
 
     const response: MovementResponse = {
       date: dateToUse,
       total: (data?.length ?? 0),
       byHour,
+      byHourProfissional,
+      horaAtual,
     };
 
     return new Response(JSON.stringify(response), {
