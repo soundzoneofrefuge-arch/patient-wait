@@ -57,6 +57,7 @@ export default function Booking() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   
   const [booking, setBooking] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [pros, setPros] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [service, setService] = useState<string>("");
@@ -292,6 +293,8 @@ export default function Booking() {
       return;
     }
     
+    setIsSubmitting(true);
+    
     try {
       console.log('Dados do agendamento:', {
         date: selectedDateCard,
@@ -356,6 +359,8 @@ export default function Booking() {
       // Outros erros
       const msg = e?.message || "Erro ao confirmar agendamento.";
       toast.error(msg.includes("duplicate") ? "Horário indisponível." : msg);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -594,15 +599,22 @@ export default function Booking() {
             <div className="md:col-span-2">
               <Button
                 onClick={handleBook}
-                disabled={!isFormValid}
+                disabled={!isFormValid || isSubmitting}
                 className={cn(
                   "w-full text-xl font-bold transition-all duration-300",
-                  isFormValid 
+                  isFormValid && !isSubmitting
                     ? "bg-warning text-white hover:bg-warning/90 shadow-[0_0_20px_rgba(245,158,11,0.6)]" 
                     : "bg-muted/50 text-muted-foreground"
                 )}
               >
-                AGENDAR
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    AGENDANDO...
+                  </>
+                ) : (
+                  "AGENDAR"
+                )}
               </Button>
               {!isFormValid && (
                 <p className="mt-2 text-sm text-muted-foreground">

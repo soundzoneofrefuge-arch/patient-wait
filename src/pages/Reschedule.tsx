@@ -77,6 +77,7 @@ export default function Reschedule() {
   const [userBookings, setUserBookings] = useState<Agendamento[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Agendamento | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Ref para debounce do Realtime
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -312,6 +313,8 @@ export default function Reschedule() {
       return;
     }
     
+    setIsSubmitting(true);
+    
     try {
       const { data, error } = await supabase.functions.invoke("reschedule-booking", {
         body: {
@@ -369,6 +372,8 @@ export default function Reschedule() {
     } catch (e: any) {
       console.error('Erro completo ao reagendar:', e);
       toast.error("Erro ao reagendar. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -646,15 +651,22 @@ export default function Reschedule() {
           <CardContent className="pt-6">
             <Button 
               onClick={handleReschedule} 
-              disabled={!canReschedule} 
+              disabled={!canReschedule || isSubmitting} 
               className={cn(
                 "w-full text-xl font-bold transition-all duration-300",
-                canReschedule 
+                canReschedule && !isSubmitting
                   ? "bg-warning text-white hover:bg-warning/90 shadow-[0_0_20px_rgba(245,158,11,0.6)]" 
                   : "bg-muted/50 text-muted-foreground"
               )}
             >
-              REAGENDAR
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  REAGENDANDO...
+                </>
+              ) : (
+                "REAGENDAR"
+              )}
             </Button>
             {!selectedBooking && oldContact && userBookings.length > 0 && (
               <p className="mt-2 text-sm text-muted-foreground text-center">
