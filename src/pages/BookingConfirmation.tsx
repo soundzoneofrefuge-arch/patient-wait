@@ -171,7 +171,7 @@ export default function BookingConfirmation() {
                       <div className="min-w-0">
                         <p className="font-medium text-sm">Data</p>
                         <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                          {format(new Date(bookingData.date), "PPPP", {
+                          {format(new Date(bookingData.date + 'T12:00:00'), "PPPP", {
                           locale: ptBR
                         })}
                         </p>

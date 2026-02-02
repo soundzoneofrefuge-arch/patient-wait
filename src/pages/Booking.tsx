@@ -616,7 +616,7 @@ export default function Booking() {
             </CardHeader>
             <CardContent className="space-y-2">
               <p>
-                {format(new Date(booking.DATA), "PPP", { locale: ptBR })} às {String(booking.HORA).slice(0, 5)}
+                {format(new Date(booking.DATA + 'T12:00:00'), "PPP", { locale: ptBR })} às {String(booking.HORA).slice(0, 5)}
                 {booking.PROFISSIONAL ? ` com ${booking.PROFISSIONAL}` : ""}
               </p>
             </CardContent>
