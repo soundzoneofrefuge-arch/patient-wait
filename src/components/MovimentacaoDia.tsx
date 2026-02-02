@@ -159,8 +159,8 @@ function Barber({ color, flip, nome }: { color: string; flip?: boolean; nome?: s
       {/* Nome acima da cabeça - fundo laranja, texto branco */}
       {nome && (
         <g transform={flip ? "scale(-1, 1) translate(-50, 0)" : ""}>
-          <rect x="5" y="0" width="40" height="12" rx="4" fill="#f97316" />
-          <text x="25" y="9" textAnchor="middle" fill="white" className="text-[8px] font-bold">{nome}</text>
+          <rect x="2" y="0" width="46" height="14" rx="4" fill="#f97316" />
+          <text x="25" y="11" textAnchor="middle" fill="white" className="text-[11px] font-bold">{nome}</text>
         </g>
       )}
       
@@ -715,14 +715,14 @@ export default function MovimentacaoDia() {
                 {atendimentosAtuais.find(a => a.position === "left") && (
                   <div className="absolute top-12 left-[30%]">
                     <div className="crew-bob">
-                      <Barber color="fill-warning" nome="Jacson" />
+                      <Barber color="fill-warning" nome="João" />
                     </div>
                   </div>
                 )}
                 {atendimentosAtuais.find(a => a.position === "right") && (
                   <div className="absolute top-12 right-[30%]">
                     <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
-                      <Barber color="fill-primary" flip nome="João" />
+                      <Barber color="fill-primary" flip nome="Jacson" />
                     </div>
                   </div>
                 )}
