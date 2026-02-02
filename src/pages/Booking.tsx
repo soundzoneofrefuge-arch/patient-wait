@@ -1,18 +1,15 @@
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, CheckCircle2, Store } from "lucide-react";
+import { CheckCircle2, Store, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
 import ConsultaAgendamentos from "@/components/ConsultaAgendamentos";
@@ -29,6 +26,17 @@ interface LojaConfig {
   instructions?: string;
 }
 
+interface SpecialInfo {
+  isClosed?: boolean;
+  closedMessage?: string;
+  isSpecialHours?: boolean;
+  specialHoursMessage?: string;
+  specialHoursOpening?: string;
+  specialHoursClosing?: string;
+  isHoliday?: boolean;
+  holiday?: { descricao: string };
+}
+
 // Validação de contato brasileiro (8-11 dígitos numéricos)
 function isValidBrazilContact(contact: string): boolean {
   const digits = contact.replace(/\D/g, "");
@@ -38,35 +46,29 @@ function isValidBrazilContact(contact: string): boolean {
 export default function Booking() {
   const navigate = useNavigate();
   const [config, setConfig] = useState<LojaConfig | null>(null);
-  const [date, setDate] = useState<Date | undefined>(undefined);
   const [professional, setProfessional] = useState<string>("");
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
-  const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({});
-  const [slotsByProDateFirst, setSlotsByProDateFirst] = useState<Record<string, Record<string, string[]>>>({});
-  const [specialInfoByDate, setSpecialInfoByDate] = useState<Record<string, {
-    isClosed?: boolean;
-    closedMessage?: string;
-    isSpecialHours?: boolean;
-    specialHoursMessage?: string;
-    specialHoursOpening?: string;
-    specialHoursClosing?: string;
-    isHoliday?: boolean;
-    holiday?: { descricao: string };
-  }>>({});
+  
+  // OTIMIZAÇÃO: Estado para data selecionada via cards (não mais busca inicial)
+  const [selectedDateCard, setSelectedDateCard] = useState<string | null>(null);
+  const [slotsForSelectedDate, setSlotsForSelectedDate] = useState<string[]>([]);
+  const [specialInfo, setSpecialInfo] = useState<SpecialInfo | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  
   const [booking, setBooking] = useState<any>(null);
   const [pros, setPros] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [service, setService] = useState<string>("");
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  
+  // Ref para debounce do Realtime
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Verificar se o formulário é válido para habilitar botão luminoso
   const isFormValid = useMemo(() => {
-    return isValidBrazilContact(contact) && name.trim() !== "" && selectedSlot && selectedDateStr && professional && service;
-  }, [contact, name, selectedSlot, selectedDateStr, professional, service]);
+    return isValidBrazilContact(contact) && name.trim() !== "" && selectedSlot && selectedDateCard && professional && service;
+  }, [contact, name, selectedSlot, selectedDateCard, professional, service]);
 
   useEffect(() => {
     if (config?.name) {
@@ -114,14 +116,6 @@ export default function Booking() {
     loadProfissionaisEServicos();
   }, []);
 
-  const dateStr = useMemo(() => {
-    if (!date) return "";
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }, [date]);
-
   // Gerar próximas 6 datas a partir do dia atual (Brasil timezone) - excluindo domingos
   const nextSixDates = useMemo(() => {
     const arr: string[] = [];
@@ -158,27 +152,37 @@ export default function Booking() {
     return arr;
   }, []);
 
-  async function fetchSlotsFor(dStr: string) {
-    console.log('Buscando slots para:', {
-      date: dStr,
-      professional
-    });
+  // OTIMIZAÇÃO: Buscar slots APENAS para uma data específica
+  const fetchSlotsForDate = useCallback(async (dStr: string) => {
+    if (!config?.opening_time || !config?.closing_time || !config?.slot_interval_minutes) {
+      console.log('Config não carregada ainda');
+      return;
+    }
+    
+    console.log('Buscando slots para:', { date: dStr, professional });
+    setLoadingSlots(true);
+    
     try {
       const { data, error } = await supabase.functions.invoke("get-available-slots", {
         body: {
           date: dStr,
-          professional: professional || undefined
+          professional: professional || undefined,
+          // OTIMIZAÇÃO: Enviar parâmetros de horário do frontend
+          opening_time: config.opening_time,
+          closing_time: config.closing_time,
+          slot_interval_minutes: config.slot_interval_minutes
         }
       });
+      
       if (error) {
-        console.error('Erro detalhado ao buscar slots:', error);
+        console.error('Erro ao buscar slots:', error);
         throw error;
       }
+      
       console.log('Slots retornados para', dStr, ':', data);
       
-      // Retornar dados completos incluindo informações especiais
-      return {
-        slots: data?.slots as string[] || [],
+      setSlotsForSelectedDate(data?.slots || []);
+      setSpecialInfo({
         isClosed: data?.isClosed || false,
         closedMessage: data?.closedMessage || null,
         isSpecialHours: data?.isSpecialHours || false,
@@ -187,118 +191,85 @@ export default function Booking() {
         specialHoursClosing: data?.specialHoursClosing || null,
         isHoliday: data?.isHoliday || false,
         holiday: data?.holiday || null
-      };
-    } catch (err) {
-      console.error('Erro na função fetchSlotsFor:', err);
-      return { slots: [], isClosed: false, isSpecialHours: false, isHoliday: false };
-    }
-  }
-
-  async function fetchAllSlots() {
-    if (!config) {
-      console.log('Não buscando slots - configuração não carregada');
-      return;
-    }
-    console.log('Iniciando busca de slots para as datas:', nextSixDates);
-    console.log('Profissional selecionado:', professional);
-    setLoadingSlots(true);
-    try {
-      const results = await Promise.all(nextSixDates.map(async (d) => {
-        try {
-          const result = await fetchSlotsFor(d);
-          console.log(`Resultado para ${d}:`, result);
-          return { date: d, ...result };
-        } catch (error) {
-          console.error('Erro ao buscar slots para data', d, ':', error);
-          return { date: d, slots: [] as string[], isClosed: false, isSpecialHours: false, isHoliday: false };
-        }
-      }));
-      
-      const slotsMap: Record<string, string[]> = {};
-      const specialInfoMap: Record<string, any> = {};
-      
-      results.forEach((r) => {
-        slotsMap[r.date] = r.slots;
-        specialInfoMap[r.date] = {
-          isClosed: r.isClosed,
-          closedMessage: r.closedMessage,
-          isSpecialHours: r.isSpecialHours,
-          specialHoursMessage: r.specialHoursMessage,
-          specialHoursOpening: r.specialHoursOpening,
-          specialHoursClosing: r.specialHoursClosing,
-          isHoliday: r.isHoliday,
-          holiday: r.holiday
-        };
       });
       
-      console.log('Mapa final de slots:', slotsMap);
-      console.log('Mapa de informações especiais:', specialInfoMap);
-      setSlotsByDate(slotsMap);
-      setSpecialInfoByDate(specialInfoMap);
-    } catch (e: any) {
-      console.error('Erro geral ao buscar slots:', e);
-      toast.error("Erro ao buscar horários disponíveis.");
+    } catch (err) {
+      console.error('Erro na função fetchSlotsForDate:', err);
+      toast.error("Erro ao buscar horários. Tente novamente.");
+      setSlotsForSelectedDate([]);
+      setSpecialInfo(null);
     } finally {
       setLoadingSlots(false);
     }
-  }
-
-  // Função para buscar slots de um profissional específico para a primeira data
-  async function fetchSlotsForProfessional(pro: string, dateStr: string): Promise<string[]> {
-    try {
-      const { data, error } = await supabase.functions.invoke("get-available-slots", {
-        body: {
-          date: dateStr,
-          professional: pro
-        }
-      });
-      if (error) throw error;
-      return data?.slots as string[] || [];
-    } catch {
-      return [];
-    }
-  }
-
-  // Buscar slots por profissional para verificar disponibilidade (data selecionada)
-  useEffect(() => {
-    if (!config || pros.length === 0 || !date) return;
-    
-    const selectedDateStr = (() => {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    })();
-    
-    const fetchAllProsSlots = async () => {
-      const results: Record<string, string[]> = {};
-      await Promise.all(pros.map(async (p) => {
-        results[p] = await fetchSlotsForProfessional(p, selectedDateStr);
-      }));
-      setSlotsByProDateFirst(prev => ({ ...prev, [selectedDateStr]: results }));
-    };
-    fetchAllProsSlots();
-  }, [config, pros, date]);
-
-  // Atualização automática ao mudar data/profissional
-  useEffect(() => {
-    if (!config) return;
-    console.log('useEffect disparado - fetchAllSlots');
-    fetchAllSlots();
   }, [config, professional]);
 
-  // Realtime para atualizar slots quando houver mudanças 
+  // Handler para clique no card de data
+  const handleDateCardClick = useCallback((dateStr: string) => {
+    // Limpar seleção de horário anterior
+    setSelectedSlot(null);
+    setSelectedDateCard(dateStr);
+    
+    // Buscar slots para a data clicada
+    fetchSlotsForDate(dateStr);
+  }, [fetchSlotsForDate]);
+
+  // Rebuscar slots quando profissional mudar (se já há data selecionada)
   useEffect(() => {
-    if (!config) return;
-    const channel = supabase.channel("booking-slots").on("postgres_changes", {
-      event: "*",
-      schema: "public",
-      table: "agendamentos_robustos"
-    }, () => fetchAllSlots()).subscribe();
+    if (selectedDateCard && config) {
+      // Limpar slot selecionado pois profissional mudou
+      setSelectedSlot(null);
+      fetchSlotsForDate(selectedDateCard);
+    }
+  }, [professional]);
+
+  // OTIMIZAÇÃO: Realtime com debounce de 1.5s - monitora APENAS a data selecionada
+  useEffect(() => {
+    if (!config || !selectedDateCard) return;
+    
+    const channel = supabase
+      .channel("booking-slots")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "agendamentos_robustos"
+      }, (payload: any) => {
+        // Verificar se a mudança afeta a data selecionada
+        const changedDate = payload.new?.DATA || payload.old?.DATA;
+        
+        if (changedDate === selectedDateCard) {
+          console.log('Realtime: mudança detectada na data selecionada, aplicando debounce...');
+          
+          // Cancelar timer anterior
+          if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+          }
+          
+          // Novo timer de 1.5s
+          debounceTimerRef.current = setTimeout(() => {
+            console.log('Realtime: atualizando slots após debounce');
+            fetchSlotsForDate(selectedDateCard);
+          }, 1500);
+        }
+      })
+      .subscribe();
+
     return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [config, professional]);
+  }, [config, selectedDateCard, professional, fetchSlotsForDate]);
+
+  // Handler para seleção de horário com validação
+  const handleSlotSelect = useCallback((slot: string) => {
+    // Verificar se o slot ainda está disponível
+    if (!slotsForSelectedDate.includes(slot)) {
+      toast.error("Este horário não está mais disponível. Escolha outro.");
+      return;
+    }
+    setSelectedSlot(slot);
+  }, [slotsForSelectedDate]);
 
   async function handleBook() {
     if (!name || !contact) {
@@ -313,22 +284,24 @@ export default function Booking() {
       toast.warning("Selecione um serviço.");
       return;
     }
-    if (!selectedSlot || !selectedDateStr) {
+    if (!selectedSlot || !selectedDateCard) {
       toast.warning("Escolha um horário disponível.");
       return;
     }
+    
     try {
       console.log('Dados do agendamento:', {
-        date: selectedDateStr,
+        date: selectedDateCard,
         time: selectedSlot,
         name,
         contact,
         professional,
         service
       });
+      
       const { data, error } = await supabase.functions.invoke("book-slot", {
         body: {
-          date: selectedDateStr,
+          date: selectedDateCard,
           time: selectedSlot,
           name,
           contact,
@@ -336,16 +309,18 @@ export default function Booking() {
           service
         }
       });
+      
       if (error) {
         console.error('Erro na edge function book_slot:', error);
         throw error;
       }
+      
       console.log('Agendamento criado com sucesso:', data);
 
       // Redirecionar para página de confirmação
       navigate("/booking-confirmation", {
         state: {
-          date: selectedDateStr,
+          date: selectedDateCard,
           time: selectedSlot,
           name,
           contact,
@@ -357,19 +332,27 @@ export default function Booking() {
     } catch (e: any) {
       console.error('Erro completo ao agendar:', e);
       
-      // Verificar se a resposta contém informação sobre horário já agendado
-      if (e?.message?.includes("O horário selecionado já possui agendamento")) {
-        toast.error("O horário selecionado já possui agendamento. Por favor, atualize a página e escolha outro horário disponível.", {
-          duration: 6000
-        });
-        // Recarregar slots automaticamente após alguns segundos
-        setTimeout(() => {
-          fetchAllSlots();
-        }, 2000);
-      } else {
-        const msg = e?.message || "Erro ao confirmar agendamento.";
-        toast.error(msg.includes("duplicate") ? "Horário indisponível." : msg);
+      // Verificar se é conflito de horário (409)
+      if (e?.message?.includes("já possui agendamento") || 
+          e?.context?.status === 409) {
+        toast.error(
+          "Este horário foi reservado por outra pessoa. Atualizando horários disponíveis...",
+          { duration: 5000 }
+        );
+        
+        // Limpar seleção
+        setSelectedSlot(null);
+        
+        // Recarregar slots da data selecionada
+        if (selectedDateCard) {
+          await fetchSlotsForDate(selectedDateCard);
+        }
+        return;
       }
+      
+      // Outros erros
+      const msg = e?.message || "Erro ao confirmar agendamento.";
+      toast.error(msg.includes("duplicate") ? "Horário indisponível." : msg);
     }
   }
 
@@ -437,50 +420,49 @@ export default function Booking() {
           <MovimentacaoDia />
         </section>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Data */}
-          <Card className={cn(date && "ring-2 ring-primary")}>
-            <CardHeader>
-              <CardTitle className={cn(date && "text-primary")}>Data</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
+        {/* OTIMIZAÇÃO: Cards de data clicáveis */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Escolha a Data</CardTitle>
+            <p className="text-sm text-muted-foreground">Clique em uma data para ver os horários disponíveis</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+              {nextSixDates.map(d => {
+                const dateObj = new Date(d + 'T12:00:00');
+                const isSelected = selectedDateCard === d;
+                
+                return (
+                  <Card
+                    key={d}
                     className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground",
-                      date && "bg-primary text-white hover:bg-primary/90 border-primary"
+                      "cursor-pointer transition-all hover:border-primary/50",
+                      isSelected && "ring-2 ring-primary border-primary bg-primary/10"
                     )}
+                    onClick={() => handleDateCardClick(d)}
                   >
-                    <CalendarIcon />
-                    {date ? format(date, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar 
-                    mode="single" 
-                    selected={date} 
-                    onSelect={newDate => {
-                      setDate(newDate);
-                      setIsDatePickerOpen(false);
-                    }} 
-                    initialFocus 
-                    className={cn("p-3 pointer-events-auto [&_.rdp-head]:hidden [&_.rdp-weekdays]:hidden")}
-                    disabled={(selectedDate) => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const target = new Date(selectedDate);
-                      target.setHours(0, 0, 0, 0);
-                      return target < today || selectedDate.getDay() === 0;
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            </CardContent>
-          </Card>
+                    <CardContent className="p-3 text-center">
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {format(dateObj, "EEE", { locale: ptBR })}
+                      </p>
+                      <p className={cn(
+                        "text-lg font-bold",
+                        isSelected && "text-primary"
+                      )}>
+                        {format(dateObj, "dd", { locale: ptBR })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(dateObj, "MMM", { locale: ptBR })}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Profissional */}
           <Card className={cn(professional && "ring-2 ring-primary")}>
             <CardHeader>
@@ -491,25 +473,12 @@ export default function Booking() {
                 <SelectTrigger className={cn(professional && "bg-primary text-white border-primary [&>svg]:text-white")}>
                   <SelectValue placeholder="Selecione um profissional" />
                 </SelectTrigger>
-              <SelectContent>
-                  {pros.map(p => {
-                    // Verificar se profissional está esgotado somente quando uma data foi selecionada
-                    const currentDateStr = date ? (() => {
-                      const y = date.getFullYear();
-                      const m = String(date.getMonth() + 1).padStart(2, "0");
-                      const d = String(date.getDate()).padStart(2, "0");
-                      return `${y}-${m}-${d}`;
-                    })() : null;
-                    
-                    const proSlots = currentDateStr ? slotsByProDateFirst[currentDateStr]?.[p] : undefined;
-                    const isEsgotado = currentDateStr && proSlots !== undefined && proSlots.length === 0;
-                    
-                    return (
-                      <SelectItem key={p} value={p}>
-                        {p}{isEsgotado && " - Esgotado para a data selecionada"}
-                      </SelectItem>
-                    );
-                  })}
+                <SelectContent>
+                  {pros.map(p => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </CardContent>
@@ -533,79 +502,68 @@ export default function Booking() {
           </Card>
         </div>
 
-        {/* Horários */}
+        {/* Horários - Mostrar APENAS quando uma data for selecionada */}
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Horários Disponíveis</CardTitle>
           </CardHeader>
           <CardContent>
-            {!config ? <p className="text-sm text-muted-foreground">Carregando configurações...</p> : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {nextSixDates.map(d => {
-                  const specialInfo = specialInfoByDate[d];
-                  const isClosed = specialInfo?.isClosed;
-                  const isSpecialHours = specialInfo?.isSpecialHours;
-                  const isHoliday = specialInfo?.isHoliday;
-                  
-                  return (
-                    <div key={d} className="space-y-2">
-                      <div className="text-sm font-medium mx-[5px] my-[5px] py-[5px] px-[5px] rounded-sm">
-                        {format(new Date(d + 'T12:00:00'), "PPP", { locale: ptBR })}
-                      </div>
-                      
-                      {/* Alerta de Horário Especial */}
-                      {isSpecialHours && !isClosed && (
-                        <div className="p-2 rounded-md bg-warning/20 border border-warning/50 text-warning text-xs">
-                          <span className="font-semibold">⚠️ Horário Especial: </span>
-                          {specialInfo?.specialHoursOpening} - {specialInfo?.specialHoursClosing}
-                          {specialInfo?.specialHoursMessage && (
-                            <span className="block mt-1">{specialInfo.specialHoursMessage}</span>
-                          )}
-                        </div>
-                      )}
-                      
-                      {loadingSlots ? (
-                        <div className="grid grid-cols-3 gap-2">
-                          {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="h-9 rounded-md bg-muted animate-pulse" />
-                          ))}
-                        </div>
-                      ) : isClosed ? (
-                        /* Loja Fechada - Mensagem em vermelho claro com letras brancas */
-                        <div className="p-3 rounded-md bg-red-400 text-white text-center font-semibold">
-                          {specialInfo?.closedMessage || "Loja Fechada"}
-                        </div>
-                      ) : isHoliday ? (
-                        /* Feriado */
-                        <div className="p-3 rounded-md bg-destructive/20 border border-destructive/50 text-destructive text-center text-sm">
-                          🎉 {specialInfo?.holiday?.descricao || "Feriado"}
-                        </div>
-                      ) : slotsByDate[d]?.length ? (
-                        <div className="flex flex-wrap gap-2">
-                          {slotsByDate[d].map(s => {
-                            const isSelected = selectedSlot === s && selectedDateStr === d;
-                            return (
-                              <Button
-                                key={s}
-                                variant={isSelected ? "default" : "secondary"}
-                                onClick={() => {
-                                  setSelectedSlot(s);
-                                  setSelectedDateStr(d);
-                                }}
-                                size="sm"
-                                className="mx-[4px] my-[4px] py-[4px] px-[4px] font-semibold text-base"
-                              >
-                                {s}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Nenhum horário disponível.</p>
-                      )}
-                    </div>
-                  );
-                })}
+            {!selectedDateCard ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Selecione uma data acima para ver os horários disponíveis
+              </p>
+            ) : loadingSlots ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">Carregando horários...</span>
+              </div>
+            ) : specialInfo?.isClosed ? (
+              <div className="p-4 rounded-md bg-red-400 text-white text-center font-semibold">
+                {specialInfo.closedMessage || "Loja Fechada"}
+              </div>
+            ) : specialInfo?.isHoliday ? (
+              <div className="p-4 rounded-md bg-destructive/20 border border-destructive/50 text-destructive text-center">
+                🎉 {specialInfo.holiday?.descricao || "Feriado"}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Alerta de Horário Especial */}
+                {specialInfo?.isSpecialHours && (
+                  <div className="p-3 rounded-md bg-warning/20 border border-warning/50 text-warning text-sm">
+                    <span className="font-semibold">⚠️ Horário Especial: </span>
+                    {specialInfo.specialHoursOpening} - {specialInfo.specialHoursClosing}
+                    {specialInfo.specialHoursMessage && (
+                      <span className="block mt-1">{specialInfo.specialHoursMessage}</span>
+                    )}
+                  </div>
+                )}
+                
+                {/* Data selecionada */}
+                <div className="text-sm font-medium text-primary">
+                  {format(new Date(selectedDateCard + 'T12:00:00'), "PPP", { locale: ptBR })}
+                </div>
+                
+                {/* Horários */}
+                {slotsForSelectedDate.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {slotsForSelectedDate.map(s => {
+                      const isSelected = selectedSlot === s;
+                      return (
+                        <Button
+                          key={s}
+                          variant={isSelected ? "default" : "secondary"}
+                          onClick={() => handleSlotSelect(s)}
+                          size="sm"
+                          className="mx-[4px] my-[4px] py-[4px] px-[4px] font-semibold text-base"
+                        >
+                          {s}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum horário disponível para esta data.</p>
+                )}
               </div>
             )}
           </CardContent>

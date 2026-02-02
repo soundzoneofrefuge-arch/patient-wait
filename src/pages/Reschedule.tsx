@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,13 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
 import ContactInfo from "@/components/ContactInfo";
@@ -39,6 +37,7 @@ interface Agendamento {
   STATUS: string;
   senha: string;
 }
+
 interface LojaConfig {
   opening_time?: string;
   closing_time?: string;
@@ -46,30 +45,46 @@ interface LojaConfig {
   nome_profissionais?: string;
   escolha_serviços?: string;
 }
+
+interface SpecialInfo {
+  isClosed?: boolean;
+  closedMessage?: string;
+  isSpecialHours?: boolean;
+  specialHoursMessage?: string;
+  specialHoursOpening?: string;
+  specialHoursClosing?: string;
+  isHoliday?: boolean;
+  holiday?: { descricao: string };
+}
+
 export default function Reschedule() {
   const navigate = useNavigate();
   const [config, setConfig] = useState<LojaConfig | null>(null);
   const [oldContact, setOldContact] = useState("");
   const [senha, setSenha] = useState("");
-  const [newDate, setNewDate] = useState<Date | undefined>(undefined);
   const [professional, setProfessional] = useState<string>("");
-  const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({});
-  const [slotsByProDateFirst, setSlotsByProDateFirst] = useState<Record<string, Record<string, string[]>>>({});
+  
+  // OTIMIZAÇÃO: Estado para data selecionada via cards
+  const [selectedDateCard, setSelectedDateCard] = useState<string | null>(null);
+  const [slotsForSelectedDate, setSlotsForSelectedDate] = useState<string[]>([]);
+  const [specialInfo, setSpecialInfo] = useState<SpecialInfo | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  
   const [pros, setPros] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [service, setService] = useState<string>("");
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [userBookings, setUserBookings] = useState<Agendamento[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Agendamento | null>(null);
+  
+  // Ref para debounce do Realtime
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Verificar se pode reagendar
   const canReschedule = useMemo(() => {
-    return isValidBrazilContact(oldContact) && isValidSenha(senha) && selectedBooking !== null && selectedSlot !== null && selectedDateStr !== null;
-  }, [oldContact, senha, selectedBooking, selectedSlot, selectedDateStr]);
+    return isValidBrazilContact(oldContact) && isValidSenha(senha) && selectedBooking !== null && selectedSlot !== null && selectedDateCard !== null;
+  }, [oldContact, senha, selectedBooking, selectedSlot, selectedDateCard]);
 
   useEffect(() => {
     document.title = "Reagendar atendimento | ÁSPERUS";
@@ -78,10 +93,7 @@ export default function Reschedule() {
   // Carregar configuração
   useEffect(() => {
     (async () => {
-      const {
-        data,
-        error
-      } = await supabase.from("info_loja").select("*").limit(1).maybeSingle();
+      const { data, error } = await supabase.from("info_loja").select("*").limit(1).maybeSingle();
       if (error) {
         console.error(error);
         toast.error("Não foi possível carregar as configurações.");
@@ -95,10 +107,7 @@ export default function Reschedule() {
   useEffect(() => {
     const loadProfissionaisEServicos = async () => {
       try {
-        const {
-          data,
-          error
-        } = await supabase.from("info_loja").select("nome_profissionais, escolha_serviços");
+        const { data, error } = await supabase.from("info_loja").select("nome_profissionais, escolha_serviços");
         if (error) {
           console.error("Erro ao carregar profissionais e serviços:", error);
           return;
@@ -147,34 +156,26 @@ export default function Reschedule() {
       setUserBookings([]);
     }
   }, [oldContact, senha]);
-  const newDateStr = useMemo(() => {
-    if (!newDate) return "";
-    const y = newDate.getFullYear();
-    const m = String(newDate.getMonth() + 1).padStart(2, "0");
-    const d = String(newDate.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }, [newDate]);
+
+  // Gerar próximas 6 datas
   const nextSixDates = useMemo(() => {
     const arr: string[] = [];
     
-    // Obter data atual do Brasil usando toLocaleString
     const brazilTime = new Date().toLocaleString("en-CA", {
       timeZone: "America/Sao_Paulo",
       year: "numeric",
       month: "2-digit", 
       day: "2-digit"
-    }).split('T')[0]; // Formato YYYY-MM-DD
+    }).split('T')[0];
     
-    // Converter para objeto Date baseado na data local do Brasil
     const [year, month, day] = brazilTime.split('-').map(Number);
-    const today = new Date(year, month - 1, day); // month é 0-indexed
+    const today = new Date(year, month - 1, day);
     
     let i = 0;
     while (arr.length < 6) {
       const targetDate = new Date(today);
       targetDate.setDate(today.getDate() + i);
       
-      // Pular domingos (0 = domingo)
       if (targetDate.getDay() !== 0) {
         const y = targetDate.getFullYear();
         const m = String(targetDate.getMonth() + 1).padStart(2, "0");
@@ -183,7 +184,6 @@ export default function Reschedule() {
       }
       i++;
       
-      // Evitar loop infinito - máximo 30 dias de busca
       if (i > 30) break;
     }
     
@@ -191,135 +191,159 @@ export default function Reschedule() {
     console.log('Datas geradas sem domingos (Reschedule):', arr);
     return arr;
   }, []);
-  async function fetchSlotsFor(dStr: string) {
+
+  // OTIMIZAÇÃO: Buscar slots APENAS para uma data específica
+  const fetchSlotsForDate = useCallback(async (dStr: string) => {
+    if (!config?.opening_time || !config?.closing_time || !config?.slot_interval_minutes) {
+      console.log('Config não carregada ainda');
+      return;
+    }
+    
+    console.log('Buscando slots para:', { date: dStr, professional });
+    setLoadingSlots(true);
+    
     try {
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke("get-available-slots", {
+      const { data, error } = await supabase.functions.invoke("get-available-slots", {
         body: {
           date: dStr,
-          professional: professional || undefined
+          professional: professional || undefined,
+          opening_time: config.opening_time,
+          closing_time: config.closing_time,
+          slot_interval_minutes: config.slot_interval_minutes
         }
       });
+      
       if (error) {
         console.error('Erro ao buscar slots:', error);
         throw error;
       }
-      return data?.slots as string[] || [];
-    } catch (err) {
-      console.error('Erro na função fetchSlotsFor:', err);
-      return [];
-    }
-  }
-  async function fetchAllSlots() {
-    if (!config) return;
-    setLoadingSlots(true);
-    try {
-      const results: [string, string[]][] = await Promise.all(nextSixDates.map(async (d): Promise<[string, string[]]> => {
-        try {
-          const s = await fetchSlotsFor(d);
-          return [d, s];
-        } catch (error) {
-          console.error('Erro ao buscar slots para data', d, ':', error);
-          return [d, [] as string[]];
-        }
-      }));
-      const map: Record<string, string[]> = {};
-      results.forEach(([d, s]) => {
-        map[d] = s;
+      
+      console.log('Slots retornados para', dStr, ':', data);
+      
+      setSlotsForSelectedDate(data?.slots || []);
+      setSpecialInfo({
+        isClosed: data?.isClosed || false,
+        closedMessage: data?.closedMessage || null,
+        isSpecialHours: data?.isSpecialHours || false,
+        specialHoursMessage: data?.specialHoursMessage || null,
+        specialHoursOpening: data?.specialHoursOpening || null,
+        specialHoursClosing: data?.specialHoursClosing || null,
+        isHoliday: data?.isHoliday || false,
+        holiday: data?.holiday || null
       });
-      setSlotsByDate(map);
-    } catch (e: any) {
-      console.error('Erro geral ao buscar slots:', e);
-      toast.error("Erro ao buscar horários disponíveis.");
+      
+    } catch (err) {
+      console.error('Erro na função fetchSlotsForDate:', err);
+      toast.error("Erro ao buscar horários. Tente novamente.");
+      setSlotsForSelectedDate([]);
+      setSpecialInfo(null);
     } finally {
       setLoadingSlots(false);
     }
-  }
-  
-  // Função para buscar slots de um profissional específico
-  async function fetchSlotsForProfessional(pro: string, dateStr: string): Promise<string[]> {
-    try {
-      const { data, error } = await supabase.functions.invoke("get-available-slots", {
-        body: {
-          date: dateStr,
-          professional: pro
-        }
-      });
-      if (error) throw error;
-      return data?.slots as string[] || [];
-    } catch {
-      return [];
-    }
-  }
-
-  // Buscar slots por profissional para verificar disponibilidade (data selecionada)
-  useEffect(() => {
-    if (!config || pros.length === 0 || !newDate) return;
-    
-    const selectedDateStr = (() => {
-      const y = newDate.getFullYear();
-      const m = String(newDate.getMonth() + 1).padStart(2, "0");
-      const d = String(newDate.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    })();
-    
-    const fetchAllProsSlots = async () => {
-      const results: Record<string, string[]> = {};
-      await Promise.all(pros.map(async (p) => {
-        results[p] = await fetchSlotsForProfessional(p, selectedDateStr);
-      }));
-      setSlotsByProDateFirst(prev => ({ ...prev, [selectedDateStr]: results }));
-    };
-    fetchAllProsSlots();
-  }, [config, pros, newDate]);
-
-  useEffect(() => {
-    if (!config) return;
-    fetchAllSlots();
   }, [config, professional]);
+
+  // Handler para clique no card de data
+  const handleDateCardClick = useCallback((dateStr: string) => {
+    setSelectedSlot(null);
+    setSelectedDateCard(dateStr);
+    fetchSlotsForDate(dateStr);
+  }, [fetchSlotsForDate]);
+
+  // Rebuscar slots quando profissional mudar
   useEffect(() => {
-    if (!config) return;
-    const channel = supabase.channel("reschedule-slots").on("postgres_changes", {
-      event: "*",
-      schema: "public",
-      table: "agendamentos_robustos"
-    }, () => fetchAllSlots()).subscribe();
+    if (selectedDateCard && config) {
+      setSelectedSlot(null);
+      fetchSlotsForDate(selectedDateCard);
+    }
+  }, [professional]);
+
+  // OTIMIZAÇÃO: Realtime com debounce de 1.5s
+  useEffect(() => {
+    if (!config || !selectedDateCard) return;
+    
+    const channel = supabase
+      .channel("reschedule-slots")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "agendamentos_robustos"
+      }, (payload: any) => {
+        const changedDate = payload.new?.DATA || payload.old?.DATA;
+        
+        if (changedDate === selectedDateCard) {
+          console.log('Realtime: mudança detectada na data selecionada, aplicando debounce...');
+          
+          if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+          }
+          
+          debounceTimerRef.current = setTimeout(() => {
+            console.log('Realtime: atualizando slots após debounce');
+            fetchSlotsForDate(selectedDateCard);
+          }, 1500);
+        }
+      })
+      .subscribe();
+
     return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [config, professional]);
+  }, [config, selectedDateCard, professional, fetchSlotsForDate]);
+
+  // Handler para seleção de horário
+  const handleSlotSelect = useCallback((slot: string) => {
+    if (!slotsForSelectedDate.includes(slot)) {
+      toast.error("Este horário não está mais disponível. Escolha outro.");
+      return;
+    }
+    setSelectedSlot(slot);
+  }, [slotsForSelectedDate]);
+
   async function handleReschedule() {
     if (!selectedBooking) {
       toast.warning("Selecione o agendamento que deseja reagendar.");
       return;
     }
-    if (!selectedSlot || !selectedDateStr) {
+    if (!selectedSlot || !selectedDateCard) {
       toast.warning("Escolha uma nova data e horário.");
       return;
     }
+    
     try {
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke("reschedule-booking", {
+      const { data, error } = await supabase.functions.invoke("reschedule-booking", {
         body: {
           oldName: selectedBooking.NOME,
           oldContact: selectedBooking.CONTATO,
           oldDate: selectedBooking.DATA,
           oldTime: selectedBooking.HORA,
-          newDate: selectedDateStr,
+          newDate: selectedDateCard,
           newTime: selectedSlot,
           professional,
           service,
           senha: selectedBooking.senha
         }
       });
+      
       if (error) {
         console.error('Erro na edge function reschedule_booking:', error);
         
-        // Verificar se é erro de validação específico
+        // Verificar se é conflito de horário
+        if (error.message?.includes("já possui agendamento") || 
+            error.context?.status === 409) {
+          toast.error(
+            "Este horário foi reservado por outra pessoa. Atualizando horários disponíveis...",
+            { duration: 5000 }
+          );
+          setSelectedSlot(null);
+          if (selectedDateCard) {
+            await fetchSlotsForDate(selectedDateCard);
+          }
+          return;
+        }
+        
         if (error.message?.includes("não encontrado")) {
           toast.error("Agendamento não encontrado. Verifique os dados informados.");
         } else if (error.message?.includes("Horário não disponível")) {
@@ -330,12 +354,11 @@ export default function Reschedule() {
         return;
       }
 
-      // Redirecionar para página de confirmação
       navigate("/reschedule-confirmation", {
         state: {
           oldDate: selectedBooking.DATA,
           oldTime: selectedBooking.HORA,
-          newDate: selectedDateStr,
+          newDate: selectedDateCard,
           newTime: selectedSlot,
           contact: selectedBooking.CONTATO,
           professional,
@@ -348,9 +371,11 @@ export default function Reschedule() {
       toast.error("Erro ao reagendar. Tente novamente.");
     }
   }
-  return <div className="min-h-screen bg-cover bg-center bg-no-repeat relative" style={{
-    backgroundImage: `url(${authBackground})`
-  }}>
+
+  return (
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat relative" style={{
+      backgroundImage: `url(${authBackground})`
+    }}>
       <div className="absolute inset-0 bg-black/50"></div>
       
       <main className="container mx-auto px-6 py-8 relative z-10">
@@ -425,7 +450,6 @@ export default function Reschedule() {
                       )}
                        onClick={() => setSelectedBooking(booking)}
                      >
-                        {/* Círculo indicador de seleção - posicionado na curvatura da borda */}
                         {selectedBooking?.id === booking.id && (
                           <div className="absolute left-2 top-2 w-3 h-3 bg-warning rounded-full"></div>
                         )}
@@ -465,67 +489,49 @@ export default function Reschedule() {
           </Card>
         )}
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Nova Data */}
-          <Card className="bg-card/95 backdrop-blur-sm border-warning/20">
-            <CardHeader>
-              <CardTitle className="text-warning">Nova Data</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal border-warning/40", !newDate && "text-muted-foreground")}>
-                    <CalendarIcon />
-                    {newDate ? format(newDate, "PPP", {
-                    locale: ptBR
-                  }) : <span>Escolha uma nova data</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar 
-                    mode="single" 
-                    selected={newDate} 
-                    onSelect={(selectedDate) => {
-                      // Verificar se é domingo antes de aceitar a seleção
-                      if (selectedDate && selectedDate.getDay() === 0) {
-                        return; // Não permitir seleção de domingo
-                      }
-                      setNewDate(selectedDate);
-                      setIsDatePickerOpen(false);
-                    }} 
-                    initialFocus 
-                    className="p-3 pointer-events-auto [&_.rdp-head]:hidden [&_.rdp-weekdays]:hidden"
-                    disabled={(date) => {
-                      // Obter data atual do Brasil
-                      const brazilTime = new Date().toLocaleString("en-CA", {
-                        timeZone: "America/Sao_Paulo",
-                        year: "numeric",
-                        month: "2-digit", 
-                        day: "2-digit"
-                      }).split('T')[0];
-                      
-                      const [year, month, day] = brazilTime.split('-').map(Number);
-                      const today = new Date(year, month - 1, day);
-                      today.setHours(0, 0, 0, 0);
-                      
-                      const targetDate = new Date(date);
-                      targetDate.setHours(0, 0, 0, 0);
-                      
-                      return targetDate < today || date.getDay() === 0; // Bloquear datas passadas e domingos
-                    }}
-                    modifiers={{
-                      disabled: (date) => date.getDay() === 0 // Desabilitar visualmente os domingos
-                    }}
-                    classNames={{
-                      head_row: "hidden",
-                      head_cell: "hidden",
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            </CardContent>
-          </Card>
+        {/* OTIMIZAÇÃO: Cards de data clicáveis */}
+        <Card className="mb-6 bg-card/95 backdrop-blur-sm border-warning/20">
+          <CardHeader>
+            <CardTitle className="text-warning">Escolha a Nova Data</CardTitle>
+            <p className="text-sm text-muted-foreground">Clique em uma data para ver os horários disponíveis</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+              {nextSixDates.map(d => {
+                const dateObj = new Date(d + 'T12:00:00');
+                const isSelected = selectedDateCard === d;
+                
+                return (
+                  <Card
+                    key={d}
+                    className={cn(
+                      "cursor-pointer transition-all hover:border-warning/50",
+                      isSelected && "ring-2 ring-warning border-warning bg-warning/10"
+                    )}
+                    onClick={() => handleDateCardClick(d)}
+                  >
+                    <CardContent className="p-3 text-center">
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {format(dateObj, "EEE", { locale: ptBR })}
+                      </p>
+                      <p className={cn(
+                        "text-lg font-bold",
+                        isSelected && "text-warning"
+                      )}>
+                        {format(dateObj, "dd", { locale: ptBR })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(dateObj, "MMM", { locale: ptBR })}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Profissional */}
           <Card className="bg-card/95 backdrop-blur-sm border-warning/20">
             <CardHeader>
@@ -537,24 +543,11 @@ export default function Reschedule() {
                   <SelectValue placeholder="Selecione um profissional" />
                 </SelectTrigger>
                 <SelectContent>
-                  {pros.map(p => {
-                    // Verificar se profissional está esgotado somente quando uma data foi selecionada
-                    const currentDateStr = newDate ? (() => {
-                      const y = newDate.getFullYear();
-                      const m = String(newDate.getMonth() + 1).padStart(2, "0");
-                      const d = String(newDate.getDate()).padStart(2, "0");
-                      return `${y}-${m}-${d}`;
-                    })() : null;
-                    
-                    const proSlots = currentDateStr ? slotsByProDateFirst[currentDateStr]?.[p] : undefined;
-                    const isEsgotado = currentDateStr && proSlots !== undefined && proSlots.length === 0;
-                    
-                    return (
-                      <SelectItem key={p} value={p}>
-                        {p}{isEsgotado && " - Esgotado para a data selecionada"}
-                      </SelectItem>
-                    );
-                  })}
+                  {pros.map(p => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </CardContent>
@@ -578,38 +571,73 @@ export default function Reschedule() {
           </Card>
         </div>
 
-        {/* Novos Horários */}
+        {/* Horários - Mostrar APENAS quando uma data for selecionada */}
         <Card className="mt-6 bg-card/95 backdrop-blur-sm border-warning/20">
           <CardHeader>
             <CardTitle className="text-warning">Novos Horários Disponíveis</CardTitle>
           </CardHeader>
           <CardContent>
-            {!config ? <p className="text-sm text-muted-foreground">Carregando configurações...</p> : <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {nextSixDates.map(d => <div key={d} className="space-y-2">
-                    <div className="text-sm font-medium mx-[5px] my-[5px] py-[5px] px-[5px] rounded-sm text-warning">
-                      {(() => {
-                        const [yy, mm, dd] = d.split("-").map(Number);
-                        const localDate = new Date(yy, mm - 1, dd); // Interpretar como data local para evitar shift de fuso
-                        return format(localDate, "PPP", { locale: ptBR });
-                      })()}
-                    </div>
-                    {loadingSlots ? <div className="grid grid-cols-3 gap-2">
-                        {Array.from({
-                  length: 6
-                }).map((_, i) => <div key={i} className="h-9 rounded-md bg-muted animate-pulse" />)}
-                      </div> : slotsByDate[d]?.length ? <div className="flex flex-wrap gap-2">
-                        {slotsByDate[d].map(s => {
-                  const isSelected = selectedSlot === s && selectedDateStr === d;
-                  return <Button key={s} variant={isSelected ? "default" : "secondary"} onClick={() => {
-                    setSelectedSlot(s);
-                    setSelectedDateStr(d);
-                  }} size="sm" className={cn("mx-[4px] my-[4px] py-[4px] px-[4px] font-semibold text-base", isSelected && "bg-warning hover:bg-warning/90 text-warning-foreground")}>
-                              {s}
-                            </Button>;
-                })}
-                      </div> : <p className="text-sm text-muted-foreground">Nenhum horário disponível.</p>}
-                  </div>)}
-              </div>}
+            {!selectedDateCard ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Selecione uma data acima para ver os horários disponíveis
+              </p>
+            ) : loadingSlots ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-warning" />
+                <span className="ml-2 text-muted-foreground">Carregando horários...</span>
+              </div>
+            ) : specialInfo?.isClosed ? (
+              <div className="p-4 rounded-md bg-red-400 text-white text-center font-semibold">
+                {specialInfo.closedMessage || "Loja Fechada"}
+              </div>
+            ) : specialInfo?.isHoliday ? (
+              <div className="p-4 rounded-md bg-destructive/20 border border-destructive/50 text-destructive text-center">
+                🎉 {specialInfo.holiday?.descricao || "Feriado"}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Alerta de Horário Especial */}
+                {specialInfo?.isSpecialHours && (
+                  <div className="p-3 rounded-md bg-warning/20 border border-warning/50 text-warning text-sm">
+                    <span className="font-semibold">⚠️ Horário Especial: </span>
+                    {specialInfo.specialHoursOpening} - {specialInfo.specialHoursClosing}
+                    {specialInfo.specialHoursMessage && (
+                      <span className="block mt-1">{specialInfo.specialHoursMessage}</span>
+                    )}
+                  </div>
+                )}
+                
+                {/* Data selecionada */}
+                <div className="text-sm font-medium text-warning">
+                  {format(new Date(selectedDateCard + 'T12:00:00'), "PPP", { locale: ptBR })}
+                </div>
+                
+                {/* Horários */}
+                {slotsForSelectedDate.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {slotsForSelectedDate.map(s => {
+                      const isSelected = selectedSlot === s;
+                      return (
+                        <Button
+                          key={s}
+                          variant={isSelected ? "default" : "secondary"}
+                          onClick={() => handleSlotSelect(s)}
+                          size="sm"
+                          className={cn(
+                            "mx-[4px] my-[4px] py-[4px] px-[4px] font-semibold text-base",
+                            isSelected && "bg-warning hover:bg-warning/90 text-warning-foreground"
+                          )}
+                        >
+                          {s}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum horário disponível para esta data.</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -645,5 +673,6 @@ export default function Reschedule() {
           <ContactInfo />
         </div>
       </main>
-    </div>;
+    </div>
+  );
 }

@@ -19,12 +19,20 @@ serve(async (req) => {
 
   let date: string | null = null;
   let professional: string | null = null;
+  // OTIMIZAÇÃO: Receber horários do frontend para evitar query em info_loja
+  let openingTimeParam: string | null = null;
+  let closingTimeParam: string | null = null;
+  let intervalParam: number | null = null;
 
   if (req.method === "POST") {
     try {
       const body = await req.json();
       date = body?.date ?? null;
       professional = body?.professional ?? null;
+      // Parâmetros opcionais do frontend
+      openingTimeParam = body?.opening_time ?? null;
+      closingTimeParam = body?.closing_time ?? null;
+      intervalParam = body?.slot_interval_minutes ?? null;
     } catch (_) {
       // ignore, fallback to query params
     }
@@ -57,7 +65,7 @@ serve(async (req) => {
       );
     }
 
-    // Verificar horários especiais primeiro
+    // QUERY 1: Verificar horários especiais primeiro
     const { data: horarioEspecial, error: horarioEspecialErr } = await supabase
       .from("horarios_especiais")
       .select("*")
@@ -80,7 +88,7 @@ serve(async (req) => {
       );
     }
 
-    // Feriados
+    // QUERY 2: Feriados
     const { data: feriado, error: feriadoErr } = await supabase
       .from("feriados")
       .select("data, descricao")
@@ -94,21 +102,18 @@ serve(async (req) => {
       );
     }
 
-    // Configuração padrão
-    const { data: config, error: configErr } = await supabase
-      .from("info_loja")
-      .select("opening_time, closing_time, slot_interval_minutes")
-      .limit(1)
-      .maybeSingle();
-    if (configErr) throw configErr;
-    if (!config) {
-      return new Response(JSON.stringify({ error: "Configuration not found" }), {
-        status: 404,
+    // OTIMIZAÇÃO: Usar parâmetros do frontend se disponíveis, caso contrário requer erro
+    // (o frontend SEMPRE deve enviar os parâmetros de horário)
+    if (!openingTimeParam || !closingTimeParam || !intervalParam) {
+      return new Response(JSON.stringify({ 
+        error: "Missing required parameters: opening_time, closing_time, slot_interval_minutes" 
+      }), {
+        status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    // Usar horários especiais se existir, senão usar config padrão
+    // Usar horários especiais se existir, senão usar parâmetros do frontend
     let opening: string;
     let closing: string;
     let isSpecialHours = false;
@@ -125,11 +130,12 @@ serve(async (req) => {
       specialHoursMessage = horarioEspecial.mensagem;
       console.log('Usando horário especial:', { opening, closing, message: specialHoursMessage });
     } else {
-      opening = typeof config.opening_time === "string" ? config.opening_time : String(config.opening_time);
-      closing = typeof config.closing_time === "string" ? config.closing_time : String(config.closing_time);
+      // OTIMIZAÇÃO: Usar parâmetros recebidos do frontend (não faz query em info_loja)
+      opening = openingTimeParam;
+      closing = closingTimeParam;
     }
 
-    const interval = config.slot_interval_minutes ?? 60;
+    const interval = intervalParam;
 
     const startM = toMinutes(opening);
     const endM = toMinutes(closing);
@@ -138,7 +144,7 @@ serve(async (req) => {
       slots.push(toHHMM(t));
     }
 
-    // Agendamentos existentes (ignorar cancelados) - FILTRAR APENAS DA DATA SOLICITADA
+    // QUERY 3: Agendamentos existentes (ignorar cancelados) - FILTRAR APENAS DA DATA SOLICITADA
     const { data: ags, error: agsErr } = await supabase
       .from("agendamentos_robustos")
       .select("HORA, PROFISSIONAL, STATUS")
