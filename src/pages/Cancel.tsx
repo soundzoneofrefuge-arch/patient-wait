@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import authBackground from "@/assets/auth-background.jpg";
 import { format } from "date-fns";
@@ -264,12 +264,19 @@ export default function Cancel() {
                 disabled={!canCancel || isLoading} 
                 className={cn(
                   "w-full text-xl font-bold transition-all duration-300",
-                  canCancel 
+                  canCancel && !isLoading
                     ? "bg-warning text-white hover:bg-warning/90 shadow-[0_0_20px_rgba(245,158,11,0.6)]" 
                     : "bg-muted/50 text-muted-foreground"
                 )}
               >
-                {isLoading ? "CANCELANDO..." : "CANCELAR AGENDAMENTO"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    CANCELANDO...
+                  </>
+                ) : (
+                  "CANCELAR AGENDAMENTO"
+                )}
               </Button>
               
               {!selectedBooking && contact && userBookings.length > 0 && (
