@@ -211,7 +211,7 @@ export default function BookingConfirmation() {
 
                     {bookingData.senha && <div className="p-3 sm:p-4 bg-primary/20 rounded border-2 border-primary text-center">
                         <div className="text-xs sm:text-sm font-bold text-primary mb-1 sm:mb-2">ATENÇÃO!!!</div>
-                        <div className="text-sm text-foreground mb-1 sm:mb-2">Guarde esta SENHA para reagendar ou cancelar:</div>
+                        <div className="text-sm text-foreground mb-1 sm:mb-2">Guarde esta SENHA para consultar, reagendar ou cancelar:</div>
                         <div className="text-2xl sm:text-3xl font-bold tracking-wider font-mono text-primary">{bookingData.senha}</div>
                       </div>}
                   </div>
