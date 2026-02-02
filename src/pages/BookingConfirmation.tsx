@@ -51,8 +51,7 @@ export default function BookingConfirmation() {
       </Card>
     </div>;
   }
-  return (
-    <>
+  return <>
       {/* Print styles */}
       <style>{`
         @media print {
@@ -134,8 +133,8 @@ export default function BookingConfirmation() {
       `}</style>
       
       <div className="min-h-screen bg-cover bg-center bg-no-repeat relative print-container" style={{
-        backgroundImage: `url(${authBackground})`
-      }}>
+      backgroundImage: `url(${authBackground})`
+    }}>
         <div className="absolute inset-0 bg-black/50"></div>
         
         <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
@@ -172,8 +171,8 @@ export default function BookingConfirmation() {
                         <p className="font-medium text-sm">Data</p>
                         <p className="text-xs sm:text-sm text-muted-foreground truncate">
                           {format(new Date(bookingData.date + 'T12:00:00'), "PPPP", {
-                          locale: ptBR
-                        })}
+                        locale: ptBR
+                      })}
                         </p>
                       </div>
                     </div>
@@ -210,13 +209,11 @@ export default function BookingConfirmation() {
                       </div>
                     </div>
 
-                    {bookingData.senha && (
-                      <div className="p-3 sm:p-4 bg-primary/20 rounded border-2 border-primary text-center">
+                    {bookingData.senha && <div className="p-3 sm:p-4 bg-primary/20 rounded border-2 border-primary text-center">
                         <div className="text-xs sm:text-sm font-bold text-primary mb-1 sm:mb-2">ATENÇÃO!!!</div>
                         <div className="text-sm text-foreground mb-1 sm:mb-2">Guarde esta SENHA para reagendar ou cancelar:</div>
                         <div className="text-2xl sm:text-3xl font-bold tracking-wider font-mono text-primary">{bookingData.senha}</div>
-                      </div>
-                    )}
+                      </div>}
                   </div>
 
                   {/* Informações da loja */}
@@ -258,10 +255,10 @@ export default function BookingConfirmation() {
                   <div className="border-t pt-4 sm:pt-6">
                     <h3 className="font-semibold mb-2 sm:mb-3 text-sm">Orientações importantes:</h3>
                     <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-muted-foreground">
-                      <li>• Chegue com 10 minutos de antecedência.</li>
+                      <li>• Chegue com 15 minutos de antecedência.</li>
                       <li>• Aceitamos pagamento em dinheiro, Pix e cartões de crédito/débito.</li>
-                      <li>• Em caso de cancelamento, entre em contato com antecedência.</li>
-                      <li>• A tolerância para atrasos é de 15 minutos. Após esse tempo, o horário será cancelado e será necessário um novo agendamento.</li>
+                      <li>• Precisa cancelar? Avise antes e libere esse horário para quem precisa.</li>
+                      <li>• Aguardamos até 15 minutinhos. Depois disso, precisaremos remarcar para garantir a qualidade do seu atendimento.</li>
                     </ul>
                   </div>
 
@@ -279,6 +276,5 @@ export default function BookingConfirmation() {
             </div>
           </main>
         </div>
-    </>
-  );
+    </>;
 }
