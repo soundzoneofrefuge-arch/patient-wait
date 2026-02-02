@@ -5,10 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Scissors } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type AgendamentoHora = {
+  hora: string;
+  profissional: string;
+};
+
 type MovementData = {
   date: string;
   total: number;
   byHour: Record<string, number>; // "09" -> 2
+  byHourProfissional: Record<string, AgendamentoHora[]>; // "15" -> [{hora: "15:00", profissional: "Jacson"}, ...]
+  horaAtual: string; // "15:30"
 };
 
 function getBrazilTimeHHMM() {
@@ -104,6 +111,44 @@ function BarberChair({ className }: { className?: string }) {
   );
 }
 
+// Cliente sentado na cadeira sendo atendido (com horário acima da cabeça)
+function ClienteNaCadeira({ toneClass, horario, flip }: { toneClass: string; horario?: string; flip?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 40 60"
+      className={cn("w-10 h-14 drop-shadow-sm", flip && "scale-x-[-1]")}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Balão mostrando horário - sempre invertido para ficar legível */}
+      {horario && (
+        <g transform={flip ? "scale(-1, 1) translate(-40, 0)" : ""}>
+          <rect x="6" y="0" width="28" height="12" rx="4" className="fill-background/95" />
+          <path d="M18 12 L20 16 L22 12 Z" className="fill-background/95" />
+          <text x="20" y="9" textAnchor="middle" className="fill-foreground text-[7px] font-bold">{horario}</text>
+        </g>
+      )}
+      
+      {/* Cabeça */}
+      <circle cx="20" cy="24" r="6" className={toneClass} />
+      {/* Olhos */}
+      <circle cx="18" cy="23" r="0.8" className="fill-background/80" />
+      <circle cx="22" cy="23" r="0.8" className="fill-background/80" />
+      
+      {/* Corpo sentado na cadeira (reclinado) */}
+      <path d="M14 30 L14 44 L26 44 L26 30 Q20 28 14 30" className={toneClass} />
+      
+      {/* Braços apoiados */}
+      <rect x="10" y="32" width="4" height="8" rx="2" className={toneClass} />
+      <rect x="26" y="32" width="4" height="8" rx="2" className={toneClass} />
+      
+      {/* Pernas esticadas */}
+      <rect x="14" y="44" width="5" height="10" rx="2" className={toneClass} />
+      <rect x="21" y="44" width="5" height="10" rx="2" className={toneClass} />
+    </svg>
+  );
+}
+
 // Barbeiro estilizado (pessoa com avental)
 function Barber({ color, flip }: { color: string; flip?: boolean }) {
   return (
@@ -139,76 +184,88 @@ function Barber({ color, flip }: { color: string; flip?: boolean }) {
   );
 }
 
-// Cliente sentado (pessoa simplificada) com balão de conversa
-function ClienteSentado({ toneClass, showBubble }: { toneClass: string; showBubble?: boolean }) {
+// Cliente sentado (pessoa simplificada) com balão mostrando horário
+function ClienteSentado({ toneClass, showBubble, horario }: { toneClass: string; showBubble?: boolean; horario?: string }) {
   return (
     <svg
-      viewBox="0 0 32 40"
-      className="w-8 h-10 drop-shadow-sm"
+      viewBox="0 0 32 48"
+      className="w-8 h-12 drop-shadow-sm"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Balão de conversa */}
-      {showBubble && (
+      {/* Balão mostrando horário */}
+      {(showBubble || horario) && (
         <>
-          <ellipse cx="24" cy="6" rx="6" ry="4" className="fill-background/90" />
-          <path d="M20 8 L18 12 L22 9 Z" className="fill-background/90" />
-          <circle cx="22" cy="6" r="0.8" className="fill-muted-foreground/60" />
-          <circle cx="24" cy="6" r="0.8" className="fill-muted-foreground/60" />
-          <circle cx="26" cy="6" r="0.8" className="fill-muted-foreground/60" />
+          <rect x="4" y="0" width="24" height="10" rx="3" className="fill-background/95" />
+          <path d="M14 10 L16 14 L18 10 Z" className="fill-background/95" />
+          {horario ? (
+            <text x="16" y="7" textAnchor="middle" className="fill-foreground text-[6px] font-bold">{horario}</text>
+          ) : (
+            <>
+              <circle cx="12" cy="5" r="0.8" className="fill-muted-foreground/60" />
+              <circle cx="16" cy="5" r="0.8" className="fill-muted-foreground/60" />
+              <circle cx="20" cy="5" r="0.8" className="fill-muted-foreground/60" />
+            </>
+          )}
         </>
       )}
       {/* Cabeça */}
-      <circle cx="12" cy="14" r="5" className={toneClass} />
+      <circle cx="12" cy="18" r="5" className={toneClass} />
       {/* Olhos */}
-      <circle cx="10" cy="13" r="0.8" className="fill-background/80" />
-      <circle cx="14" cy="13" r="0.8" className="fill-background/80" />
+      <circle cx="10" cy="17" r="0.8" className="fill-background/80" />
+      <circle cx="14" cy="17" r="0.8" className="fill-background/80" />
       
       {/* Corpo sentado */}
-      <path d="M6 20 L6 30 L18 30 L18 20 Q12 18 6 20" className={toneClass} />
+      <path d="M6 24 L6 34 L18 34 L18 24 Q12 22 6 24" className={toneClass} />
       
       {/* Pernas dobradas */}
-      <rect x="6" y="30" width="5" height="8" rx="2" className={toneClass} />
-      <rect x="13" y="30" width="5" height="8" rx="2" className={toneClass} />
+      <rect x="6" y="34" width="5" height="8" rx="2" className={toneClass} />
+      <rect x="13" y="34" width="5" height="8" rx="2" className={toneClass} />
     </svg>
   );
 }
 
-// Cliente em pé / andando com balão de conversa
-function ClienteAndando({ toneClass, walking, showBubble }: { toneClass: string; walking?: boolean; showBubble?: boolean }) {
+// Cliente em pé / andando com balão mostrando horário
+function ClienteAndando({ toneClass, walking, showBubble, horario }: { toneClass: string; walking?: boolean; showBubble?: boolean; horario?: string }) {
   return (
     <svg
-      viewBox="0 0 32 48"
-      className={cn("w-6 h-10 drop-shadow-sm", walking && "animate-pulse")}
+      viewBox="0 0 32 56"
+      className={cn("w-6 h-14 drop-shadow-sm", walking && "animate-pulse")}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Balão de conversa */}
-      {showBubble && (
+      {/* Balão mostrando horário */}
+      {(showBubble || horario) && (
         <>
-          <ellipse cx="24" cy="6" rx="6" ry="4" className="fill-background/90" />
-          <path d="M20 8 L18 12 L22 9 Z" className="fill-background/90" />
-          <circle cx="22" cy="6" r="0.8" className="fill-muted-foreground/60" />
-          <circle cx="24" cy="6" r="0.8" className="fill-muted-foreground/60" />
-          <circle cx="26" cy="6" r="0.8" className="fill-muted-foreground/60" />
+          <rect x="6" y="0" width="22" height="10" rx="3" className="fill-background/95" />
+          <path d="M14 10 L16 14 L18 10 Z" className="fill-background/95" />
+          {horario ? (
+            <text x="17" y="7" textAnchor="middle" className="fill-foreground text-[6px] font-bold">{horario}</text>
+          ) : (
+            <>
+              <circle cx="13" cy="5" r="0.8" className="fill-muted-foreground/60" />
+              <circle cx="17" cy="5" r="0.8" className="fill-muted-foreground/60" />
+              <circle cx="21" cy="5" r="0.8" className="fill-muted-foreground/60" />
+            </>
+          )}
         </>
       )}
       {/* Cabeça */}
-      <circle cx="12" cy="14" r="5" className={toneClass} />
+      <circle cx="12" cy="18" r="5" className={toneClass} />
       {/* Olhos */}
-      <circle cx="10" cy="13" r="0.7" className="fill-background/80" />
-      <circle cx="14" cy="13" r="0.7" className="fill-background/80" />
+      <circle cx="10" cy="17" r="0.7" className="fill-background/80" />
+      <circle cx="14" cy="17" r="0.7" className="fill-background/80" />
       
       {/* Corpo */}
-      <path d="M7 20 L7 34 L17 34 L17 20 Q12 18 7 20" className={toneClass} />
+      <path d="M7 24 L7 38 L17 38 L17 24 Q12 22 7 24" className={toneClass} />
       
       {/* Braços */}
-      <rect x="3" y="22" width="4" height="10" rx="2" className={toneClass} />
-      <rect x="17" y="22" width="4" height="10" rx="2" className={toneClass} />
+      <rect x="3" y="26" width="4" height="10" rx="2" className={toneClass} />
+      <rect x="17" y="26" width="4" height="10" rx="2" className={toneClass} />
       
       {/* Pernas */}
-      <rect x="8" y="34" width="4" height="12" rx="2" className={toneClass} />
-      <rect x="14" y="34" width="4" height="12" rx="2" className={toneClass} />
+      <rect x="8" y="38" width="4" height="12" rx="2" className={toneClass} />
+      <rect x="14" y="38" width="4" height="12" rx="2" className={toneClass} />
     </svg>
   );
 }
@@ -448,9 +505,78 @@ export default function MovimentacaoDia() {
 
   // Nota: horariosPico do dia foi removido - agora usamos horariosPicoSemana (baseado nos últimos 7 dias)
 
-  // Clientes para ilustração - BASEADO EM AGENDAMENTOS FUTUROS
-  const clientesSentados = Math.min(agendamentosFuturos, 4);
-  const clientesEmPe = Math.max(0, Math.min(agendamentosFuturos - clientesSentados, 6));
+  // Calcular quem está sendo atendido agora (profissionais com agendamento no horário atual)
+  const atendimentosAtuais = useMemo(() => {
+    const byHourProfissional = movement?.byHourProfissional ?? {};
+    const [horaAtualH] = horaAtualFull.split(":").map(Number);
+    const horaKey = String(horaAtualH).padStart(2, "0");
+    
+    const agendamentosHoraAtual = byHourProfissional[horaKey] ?? [];
+    
+    // Mapeamento de profissionais conhecidos (para as cadeiras)
+    const profissionaisMap: Record<string, { toneClass: string; position: "left" | "right" }> = {
+      "Jacson": { toneClass: "fill-warning", position: "left" },
+      "João": { toneClass: "fill-primary", position: "right" },
+    };
+    
+    // Determinar quais cadeiras estão ocupadas
+    const cadeirasOcupadas: { position: "left" | "right"; horario: string; toneClass: string }[] = [];
+    
+    for (const agendamento of agendamentosHoraAtual) {
+      const profNome = agendamento.profissional?.trim() || "";
+      // Procurar por correspondência parcial (case insensitive)
+      const profKey = Object.keys(profissionaisMap).find(
+        key => profNome.toLowerCase().includes(key.toLowerCase())
+      );
+      
+      if (profKey) {
+        const profInfo = profissionaisMap[profKey];
+        // Verificar se essa cadeira já não está ocupada
+        if (!cadeirasOcupadas.some(c => c.position === profInfo.position)) {
+          cadeirasOcupadas.push({
+            position: profInfo.position,
+            horario: agendamento.hora,
+            toneClass: profInfo.toneClass,
+          });
+        }
+      }
+    }
+    
+    return cadeirasOcupadas;
+  }, [movement, horaAtualFull]);
+
+  // Calcular agendamentos futuros que estão ESPERANDO (não inclui os que estão sendo atendidos)
+  const agendamentosEsperando = useMemo(() => {
+    const byHourProfissional = movement?.byHourProfissional ?? {};
+    const [horaAtualH, minutoAtualM] = horaAtualFull.split(":").map(Number);
+    const horaAtualMinutos = horaAtualH * 60 + minutoAtualM;
+    
+    const esperando: AgendamentoHora[] = [];
+    
+    for (const [horaKey, agendamentos] of Object.entries(byHourProfissional)) {
+      const horaNum = parseInt(horaKey, 10);
+      const horaEmMinutos = horaNum * 60;
+      
+      // Só incluir horários futuros (não o atual, pois esses estão nas cadeiras)
+      if (horaEmMinutos > horaAtualMinutos) {
+        esperando.push(...agendamentos);
+      } else if (horaNum === horaAtualH && minutoAtualM < 30) {
+        // Na mesma hora, mas antes de :30, incluir apenas os que NÃO estão nas cadeiras
+        // (já que as cadeiras já mostram quem está sendo atendido)
+        // Na verdade, no horário atual todos estão "sendo atendidos" ou esperando serem chamados
+        // Para simplificar: horário atual = nas cadeiras ou esperando próxima vaga
+      }
+    }
+    
+    // Ordenar por horário
+    esperando.sort((a, b) => a.hora.localeCompare(b.hora));
+    
+    return esperando;
+  }, [movement, horaAtualFull]);
+
+  // Clientes para ilustração - BASEADO EM AGENDAMENTOS ESPERANDO
+  const clientesSentados = Math.min(agendamentosEsperando.length, 4);
+  const clientesEmPe = Math.max(0, Math.min(agendamentosEsperando.length - clientesSentados, 6));
 
   const clienteTones = useMemo(
     () => [
@@ -549,52 +675,85 @@ export default function MovimentacaoDia() {
                   <Espelho />
                 </div>
 
-                {/* Cadeiras de barbeiro */}
+                {/* Cadeiras de barbeiro com clientes sendo atendidos */}
+                {/* Cadeira esquerda (Jacson) */}
                 <div className="absolute top-14 left-[18%] -translate-x-1/2">
                   <BarberChair />
+                  {/* Cliente na cadeira se houver agendamento */}
+                  {atendimentosAtuais.find(a => a.position === "left") && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <div className="crew-bob">
+                        <ClienteNaCadeira 
+                          toneClass={atendimentosAtuais.find(a => a.position === "left")?.toneClass || "fill-muted-foreground"} 
+                          horario={atendimentosAtuais.find(a => a.position === "left")?.horario}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+                
+                {/* Cadeira direita (João) */}
                 <div className="absolute top-14 right-[18%] translate-x-1/2">
                   <BarberChair className="scale-x-[-1]" />
+                  {/* Cliente na cadeira se houver agendamento */}
+                  {atendimentosAtuais.find(a => a.position === "right") && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <div className="crew-bob" style={{ animationDelay: "0.3s" }}>
+                        <ClienteNaCadeira 
+                          toneClass={atendimentosAtuais.find(a => a.position === "right")?.toneClass || "fill-muted-foreground"} 
+                          horario={atendimentosAtuais.find(a => a.position === "right")?.horario}
+                          flip
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Barbeiros */}
-                <div className="absolute top-16 left-[30%]">
-                  <div className="crew-bob">
-                    <Barber color="fill-warning" />
+                {/* Barbeiros - só aparecem se houver cliente */}
+                {atendimentosAtuais.find(a => a.position === "left") && (
+                  <div className="absolute top-16 left-[30%]">
+                    <div className="crew-bob">
+                      <Barber color="fill-warning" />
+                    </div>
                   </div>
-                </div>
-                <div className="absolute top-16 right-[30%]">
-                  <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
-                    <Barber color="fill-primary" flip />
+                )}
+                {atendimentosAtuais.find(a => a.position === "right") && (
+                  <div className="absolute top-16 right-[30%]">
+                    <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
+                      <Barber color="fill-primary" flip />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Banco de espera */}
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[80%]">
                   <BancoEspera />
                 </div>
 
-                {/* Clientes sentados no banco */}
-                {Array.from({ length: clientesSentados }).map((_, i) => (
+                {/* Clientes sentados no banco - com horários */}
+                {agendamentosEsperando.slice(0, clientesSentados).map((agendamento, i) => (
                   <div
-                    key={`sentado-${i}`}
-                    className="absolute bottom-8"
+                    key={`sentado-${i}-${agendamento.hora}`}
+                    className="absolute bottom-6"
                     style={{ left: `${18 + i * 18}%` }}
                   >
                     <div className="crew-bob" style={{ animationDelay: `${i * 0.2}s` }}>
-                      <ClienteSentado toneClass={clienteTones[i % clienteTones.length]} showBubble={i % 2 === 0} />
+                      <ClienteSentado 
+                        toneClass={clienteTones[i % clienteTones.length]} 
+                        horario={agendamento.hora}
+                      />
                     </div>
                   </div>
                 ))}
 
-                {/* Clientes em pé / andando */}
-                {Array.from({ length: clientesEmPe }).map((_, i) => {
+                {/* Clientes em pé / andando - com horários */}
+                {agendamentosEsperando.slice(clientesSentados, clientesSentados + clientesEmPe).map((agendamento, i) => {
                   const spot = wanderSpots[i % wanderSpots.length];
                   const tone = clienteTones[(i + clientesSentados) % clienteTones.length];
 
                   return (
                     <div
-                      key={`pe-${i}`}
+                      key={`pe-${i}-${agendamento.hora}`}
                       className="absolute"
                       style={{ top: spot.top, left: spot.left }}
                     >
@@ -610,7 +769,11 @@ export default function MovimentacaoDia() {
                         }
                       >
                         <div className="crew-bob" style={{ animationDelay: `${spot.delay}s` }}>
-                          <ClienteAndando toneClass={tone} walking showBubble={i % 3 === 0} />
+                          <ClienteAndando 
+                            toneClass={tone} 
+                            walking 
+                            horario={agendamento.hora}
+                          />
                         </div>
                       </div>
                     </div>
