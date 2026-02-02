@@ -562,37 +562,48 @@ export default function MovimentacaoDia() {
   }, [movement, horaAtualFull]);
 
   // Calcular agendamentos futuros que estão ESPERANDO (não inclui os que estão sendo atendidos)
-  const agendamentosEsperando = useMemo(() => {
+  // Separados por profissional para posicionamento no banco
+  const agendamentosEsperandoPorProfissional = useMemo(() => {
     const byHourProfissional = movement?.byHourProfissional ?? {};
-    const [horaAtualH, minutoAtualM] = horaAtualFull.split(":").map(Number);
-    const horaAtualMinutos = horaAtualH * 60 + minutoAtualM;
+    const [horaAtualH] = horaAtualFull.split(":").map(Number);
     
-    const esperando: AgendamentoHora[] = [];
+    const joao: AgendamentoHora[] = [];
+    const jacson: AgendamentoHora[] = [];
     
     for (const [horaKey, agendamentos] of Object.entries(byHourProfissional)) {
       const horaNum = parseInt(horaKey, 10);
-      const horaEmMinutos = horaNum * 60;
       
-      // Só incluir horários futuros (não o atual, pois esses estão nas cadeiras)
-      if (horaEmMinutos > horaAtualMinutos) {
-        esperando.push(...agendamentos);
-      } else if (horaNum === horaAtualH && minutoAtualM < 30) {
-        // Na mesma hora, mas antes de :30, incluir apenas os que NÃO estão nas cadeiras
-        // (já que as cadeiras já mostram quem está sendo atendido)
-        // Na verdade, no horário atual todos estão "sendo atendidos" ou esperando serem chamados
-        // Para simplificar: horário atual = nas cadeiras ou esperando próxima vaga
+      // Só incluir horários futuros (próxima hora em diante)
+      if (horaNum > horaAtualH) {
+        for (const ag of agendamentos) {
+          const profNome = ag.profissional?.trim().toLowerCase() || "";
+          if (profNome.includes("jacson")) {
+            jacson.push(ag);
+          } else if (profNome.includes("joão") || profNome.includes("joao")) {
+            joao.push(ag);
+          } else {
+            // Profissional desconhecido, colocar no lado do João
+            joao.push(ag);
+          }
+        }
       }
     }
     
     // Ordenar por horário
-    esperando.sort((a, b) => a.hora.localeCompare(b.hora));
+    joao.sort((a, b) => a.hora.localeCompare(b.hora));
+    jacson.sort((a, b) => a.hora.localeCompare(b.hora));
     
-    return esperando;
+    return { joao, jacson };
   }, [movement, horaAtualFull]);
 
   // Clientes para ilustração - BASEADO EM AGENDAMENTOS ESPERANDO
-  const clientesSentados = Math.min(agendamentosEsperando.length, 4);
-  const clientesEmPe = Math.max(0, Math.min(agendamentosEsperando.length - clientesSentados, 6));
+  // Cada lado do banco tem no máximo 2 clientes sentados
+  const clientesJoaoSentados = Math.min(agendamentosEsperandoPorProfissional.joao.length, 2);
+  const clientesJacsonSentados = Math.min(agendamentosEsperandoPorProfissional.jacson.length, 2);
+  
+  // Clientes fantasmas (próximo horário após os sentados)
+  const clientesJoaoFantasma = agendamentosEsperandoPorProfissional.joao.slice(clientesJoaoSentados, clientesJoaoSentados + 1);
+  const clientesJacsonFantasma = agendamentosEsperandoPorProfissional.jacson.slice(clientesJacsonSentados, clientesJacsonSentados + 1);
 
   const clienteTones = useMemo(
     () => [
@@ -750,16 +761,16 @@ export default function MovimentacaoDia() {
                   <BancoEspera />
                 </div>
 
-                {/* Clientes sentados no banco - com horários */}
-                {agendamentosEsperando.slice(0, clientesSentados).map((agendamento, i) => (
+                {/* Clientes do João sentados no banco - LADO ESQUERDO */}
+                {agendamentosEsperandoPorProfissional.joao.slice(0, clientesJoaoSentados).map((agendamento, i) => (
                   <div
-                    key={`sentado-${i}-${agendamento.hora}`}
+                    key={`joao-sentado-${i}-${agendamento.hora}`}
                     className="absolute bottom-6"
-                    style={{ left: `${18 + i * 18}%` }}
+                    style={{ left: `${15 + i * 12}%` }}
                   >
                     <div className="crew-bob" style={{ animationDelay: `${i * 0.2}s` }}>
                       <ClienteSentado 
-                        toneClass={clienteTones[i % clienteTones.length]} 
+                        toneClass="fill-primary"
                         horario={agendamento.hora}
                         profissional={agendamento.profissional}
                       />
@@ -767,45 +778,58 @@ export default function MovimentacaoDia() {
                   </div>
                 ))}
 
-                {/* Clientes em pé / andando - com horários */}
-                {/* A partir do 5º agendamento (índice 4+), o banco está cheio e os clientes ficam "fantasmas" */}
-                {agendamentosEsperando.slice(clientesSentados, clientesSentados + clientesEmPe).map((agendamento, i) => {
-                  const spot = wanderSpots[i % wanderSpots.length];
-                  const tone = clienteTones[(i + clientesSentados) % clienteTones.length];
-                  // Efeito fantasma: a partir do 5º agendamento (índice 4 no array original = índice 0 aqui após slice dos 4 sentados)
-                  // Ou seja, todos os clientes em pé são "fantasmas" pois o banco já está cheio
-                  const isGhost = true; // Todos em pé são fantasmas (banco cheio com 4)
-
-                  return (
-                    <div
-                      key={`pe-${i}-${agendamento.hora}`}
-                      className="absolute"
-                      style={{ top: spot.top, left: spot.left }}
-                    >
-                      <div
-                        className="crew-wander"
-                        style={
-                          {
-                            "--dx": `${spot.dx}px`,
-                            "--dy": `${spot.dy}px`,
-                            "--dur": `${spot.dur}s`,
-                            animationDelay: `${spot.delay}s`,
-                          } as CSSProperties
-                        }
-                      >
-                        <div className="crew-bob" style={{ animationDelay: `${spot.delay}s` }}>
-                          <ClienteAndando 
-                            toneClass={tone} 
-                            walking 
-                            horario={agendamento.hora}
-                            profissional={agendamento.profissional}
-                            ghost={isGhost}
-                          />
-                        </div>
-                      </div>
+                {/* Clientes do Jacson sentados no banco - LADO DIREITO */}
+                {agendamentosEsperandoPorProfissional.jacson.slice(0, clientesJacsonSentados).map((agendamento, i) => (
+                  <div
+                    key={`jacson-sentado-${i}-${agendamento.hora}`}
+                    className="absolute bottom-6"
+                    style={{ left: `${60 + i * 12}%` }}
+                  >
+                    <div className="crew-bob" style={{ animationDelay: `${i * 0.2 + 0.4}s` }}>
+                      <ClienteSentado 
+                        toneClass="fill-warning"
+                        horario={agendamento.hora}
+                        profissional={agendamento.profissional}
+                      />
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
+
+                {/* Cliente fantasma do João - próximo ao barbeiro João (esquerda) */}
+                {clientesJoaoFantasma.map((agendamento, i) => (
+                  <div
+                    key={`joao-fantasma-${i}-${agendamento.hora}`}
+                    className="absolute"
+                    style={{ top: "42%", left: "8%" }}
+                  >
+                    <div className="crew-bob" style={{ animationDelay: "0.3s" }}>
+                      <ClienteAndando 
+                        toneClass="fill-primary"
+                        horario={agendamento.hora}
+                        profissional={agendamento.profissional}
+                        ghost
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Cliente fantasma do Jacson - próximo ao barbeiro Jacson (direita) */}
+                {clientesJacsonFantasma.map((agendamento, i) => (
+                  <div
+                    key={`jacson-fantasma-${i}-${agendamento.hora}`}
+                    className="absolute"
+                    style={{ top: "42%", right: "8%" }}
+                  >
+                    <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
+                      <ClienteAndando 
+                        toneClass="fill-warning"
+                        horario={agendamento.hora}
+                        profissional={agendamento.profissional}
+                        ghost
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
