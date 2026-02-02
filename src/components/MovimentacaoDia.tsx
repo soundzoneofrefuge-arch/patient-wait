@@ -123,9 +123,9 @@ function ClienteNaCadeira({ toneClass, horario, flip }: { toneClass: string; hor
       {/* Balão mostrando horário - sempre invertido para ficar legível */}
       {horario && (
         <g transform={flip ? "scale(-1, 1) translate(-40, 0)" : ""}>
-          <rect x="6" y="0" width="28" height="12" rx="4" className="fill-background/95" />
-          <path d="M18 12 L20 16 L22 12 Z" className="fill-background/95" />
-          <text x="20" y="9" textAnchor="middle" className="fill-foreground text-[7px] font-bold">{horario}</text>
+          <rect x="4" y="0" width="32" height="14" rx="4" className="fill-primary" />
+          <path d="M18 14 L20 18 L22 14 Z" className="fill-primary" />
+          <text x="20" y="11" textAnchor="middle" fill="white" className="text-[10px] font-bold">{horario}</text>
         </g>
       )}
       
@@ -196,15 +196,15 @@ function ClienteSentado({ toneClass, showBubble, horario }: { toneClass: string;
       {/* Balão mostrando horário */}
       {(showBubble || horario) && (
         <>
-          <rect x="4" y="0" width="24" height="10" rx="3" className="fill-background/95" />
-          <path d="M14 10 L16 14 L18 10 Z" className="fill-background/95" />
+          <rect x="2" y="0" width="28" height="12" rx="3" className="fill-primary" />
+          <path d="M14 12 L16 16 L18 12 Z" className="fill-primary" />
           {horario ? (
-            <text x="16" y="7" textAnchor="middle" className="fill-foreground text-[6px] font-bold">{horario}</text>
+            <text x="16" y="9" textAnchor="middle" fill="white" className="text-[9px] font-bold">{horario}</text>
           ) : (
             <>
-              <circle cx="12" cy="5" r="0.8" className="fill-muted-foreground/60" />
-              <circle cx="16" cy="5" r="0.8" className="fill-muted-foreground/60" />
-              <circle cx="20" cy="5" r="0.8" className="fill-muted-foreground/60" />
+              <circle cx="12" cy="6" r="0.8" className="fill-white/60" />
+              <circle cx="16" cy="6" r="0.8" className="fill-white/60" />
+              <circle cx="20" cy="6" r="0.8" className="fill-white/60" />
             </>
           )}
         </>
@@ -237,15 +237,15 @@ function ClienteAndando({ toneClass, walking, showBubble, horario }: { toneClass
       {/* Balão mostrando horário */}
       {(showBubble || horario) && (
         <>
-          <rect x="6" y="0" width="22" height="10" rx="3" className="fill-background/95" />
-          <path d="M14 10 L16 14 L18 10 Z" className="fill-background/95" />
+          <rect x="4" y="0" width="26" height="12" rx="3" className="fill-primary" />
+          <path d="M14 12 L16 16 L18 12 Z" className="fill-primary" />
           {horario ? (
-            <text x="17" y="7" textAnchor="middle" className="fill-foreground text-[6px] font-bold">{horario}</text>
+            <text x="17" y="9" textAnchor="middle" fill="white" className="text-[9px] font-bold">{horario}</text>
           ) : (
             <>
-              <circle cx="13" cy="5" r="0.8" className="fill-muted-foreground/60" />
-              <circle cx="17" cy="5" r="0.8" className="fill-muted-foreground/60" />
-              <circle cx="21" cy="5" r="0.8" className="fill-muted-foreground/60" />
+              <circle cx="13" cy="6" r="0.8" className="fill-white/60" />
+              <circle cx="17" cy="6" r="0.8" className="fill-white/60" />
+              <circle cx="21" cy="6" r="0.8" className="fill-white/60" />
             </>
           )}
         </>
