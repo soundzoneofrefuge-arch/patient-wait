@@ -782,7 +782,7 @@ export default function MovimentacaoDia() {
                   >
                     <div className="crew-bob" style={{ animationDelay: `${i * 0.2}s` }}>
                       <ClienteSentado 
-                        toneClass="fill-primary"
+                        toneClass="fill-sky-500"
                         horario={agendamento.hora}
                         profissional={agendamento.profissional}
                       />
@@ -816,7 +816,7 @@ export default function MovimentacaoDia() {
                   >
                     <div className="crew-bob" style={{ animationDelay: "0.3s" }}>
                       <ClienteAndando 
-                        toneClass="fill-primary"
+                        toneClass="fill-sky-500"
                         horario={agendamento.hora}
                         profissional={agendamento.profissional}
                         ghost
