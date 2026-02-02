@@ -3,6 +3,35 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, getBrazilDateTime } from '../_shared/utils.ts';
 
+// Headers de cache para CDN (Cloudflare)
+// - public: permite cache em CDNs
+// - s-maxage: tempo de cache no CDN (shared cache)
+// - max-age: tempo de cache no navegador
+// - stale-while-revalidate: serve cache antigo enquanto busca novo
+function getCacheHeaders(isToday: boolean, isClosedOrHoliday: boolean): Record<string, string> {
+  if (isClosedOrHoliday) {
+    // Feriados/fechados podem ter cache longo (1 hora)
+    return {
+      "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=60"
+    };
+  }
+  if (isToday) {
+    // Hoje: cache curto (30s) pois horários mudam mais rápido
+    return {
+      "Cache-Control": "public, max-age=15, s-maxage=30, stale-while-revalidate=15"
+    };
+  }
+  // Datas futuras: cache médio (60s)
+  return {
+    "Cache-Control": "public, max-age=30, s-maxage=60, stale-while-revalidate=30"
+  };
+}
+
+// Headers para respostas que NÃO devem ser cacheadas (erros, etc)
+const noCacheHeaders = {
+  "Cache-Control": "no-store, no-cache, must-revalidate"
+};
+
 function toMinutes(t: string) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
@@ -52,16 +81,20 @@ serve(async (req) => {
     if (!date) {
       return new Response(JSON.stringify({ error: "Missing date parameter" }), {
         status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...corsHeaders, ...noCacheHeaders },
       });
     }
 
     // Verificar se é domingo (0 = domingo)
     const dateObj = new Date(date + 'T12:00:00');
+    const brazilTimeEarly = getBrazilDateTime();
+    const todayStrEarly = brazilTimeEarly.toISOString().split('T')[0];
+    const isToday = date === todayStrEarly;
+    
     if (dateObj.getDay() === 0) {
       return new Response(
         JSON.stringify({ slots: [], message: "Domingo - Não há atendimento" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders, ...getCacheHeaders(false, true) } }
       );
     }
 
@@ -84,7 +117,7 @@ serve(async (req) => {
           isClosed: true,
           closedMessage: horarioEspecial.mensagem || "Loja Fechada"
         }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders, ...getCacheHeaders(false, true) } }
       );
     }
 
@@ -98,7 +131,7 @@ serve(async (req) => {
     if (feriado) {
       return new Response(
         JSON.stringify({ slots: [], isHoliday: true, holiday: feriado }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders, ...getCacheHeaders(false, true) } }
       );
     }
 
@@ -109,7 +142,7 @@ serve(async (req) => {
         error: "Missing required parameters: opening_time, closing_time, slot_interval_minutes" 
       }), {
         status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...corsHeaders, ...noCacheHeaders },
       });
     }
 
@@ -188,12 +221,12 @@ serve(async (req) => {
     console.log('Data de hoje (Brasil):', todayStr, 'Data solicitada:', date);
     console.log('Hora atual Brasil:', brazilTime.toTimeString().slice(0, 5));
     
-    // Se a data solicitada é anterior a hoje, retornar array vazio
+    // Se a data solicitada é anterior a hoje, retornar array vazio (cache longo - não muda)
     if (date < todayStr) {
       console.log('Data solicitada é anterior à data de hoje, retornando array vazio');
       return new Response(
         JSON.stringify({ slots: [] }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders, ...getCacheHeaders(false, true) } }
       );
     }
     
@@ -220,15 +253,17 @@ serve(async (req) => {
       response.specialHoursClosing = closing.slice(0, 5);
     }
 
+    // Resposta principal com cache inteligente baseado na data
+    console.log(`Retornando ${available.length} slots. Cache: isToday=${isToday}`);
     return new Response(
       JSON.stringify(response),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders, ...getCacheHeaders(isToday, false) } }
     );
   } catch (e) {
     console.error("get_available_slots error", e);
     return new Response(JSON.stringify({ error: String((e as Error)?.message ?? e) }), {
       status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { "Content-Type": "application/json", ...corsHeaders, ...noCacheHeaders },
     });
   }
 });
