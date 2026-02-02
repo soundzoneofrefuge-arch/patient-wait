@@ -245,9 +245,8 @@ function ClienteAndando({ toneClass, walking, showBubble, horario, profissional,
       className={cn("w-6 h-16 drop-shadow-sm", walking && "animate-pulse")}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={ghost ? { opacity: 0.4, filter: "blur(0.5px)" } : {}}
     >
-      {/* Nome do barbeiro e horário - texto sem fundo */}
+      {/* Nome do barbeiro e horário - texto sem fundo - SEM efeito ghost */}
       {(showBubble || horario || profissional) && (
         <>
           {profissional && (
@@ -264,22 +263,25 @@ function ClienteAndando({ toneClass, walking, showBubble, horario, profissional,
           )}
         </>
       )}
-      {/* Cabeça */}
-      <circle cx="12" cy="24" r="5" className={toneClass} />
-      {/* Olhos */}
-      <circle cx="10" cy="23" r="0.7" className="fill-background/80" />
-      <circle cx="14" cy="23" r="0.7" className="fill-background/80" />
-      
-      {/* Corpo */}
-      <path d="M7 30 L7 44 L17 44 L17 30 Q12 28 7 30" className={toneClass} />
-      
-      {/* Braços */}
-      <rect x="3" y="32" width="4" height="10" rx="2" className={toneClass} />
-      <rect x="17" y="32" width="4" height="10" rx="2" className={toneClass} />
-      
-      {/* Pernas */}
-      <rect x="8" y="44" width="4" height="12" rx="2" className={toneClass} />
-      <rect x="14" y="44" width="4" height="12" rx="2" className={toneClass} />
+      {/* Corpo com efeito ghost apenas no boneco, não no texto */}
+      <g style={ghost ? { opacity: 0.4, filter: "blur(0.5px)" } : {}}>
+        {/* Cabeça */}
+        <circle cx="12" cy="24" r="5" className={toneClass} />
+        {/* Olhos */}
+        <circle cx="10" cy="23" r="0.7" className="fill-background/80" />
+        <circle cx="14" cy="23" r="0.7" className="fill-background/80" />
+        
+        {/* Corpo */}
+        <path d="M7 30 L7 44 L17 44 L17 30 Q12 28 7 30" className={toneClass} />
+        
+        {/* Braços */}
+        <rect x="3" y="32" width="4" height="10" rx="2" className={toneClass} />
+        <rect x="17" y="32" width="4" height="10" rx="2" className={toneClass} />
+        
+        {/* Pernas */}
+        <rect x="8" y="44" width="4" height="12" rx="2" className={toneClass} />
+        <rect x="14" y="44" width="4" height="12" rx="2" className={toneClass} />
+      </g>
     </svg>
   );
 }
@@ -563,26 +565,38 @@ export default function MovimentacaoDia() {
 
   // Calcular agendamentos futuros que estão ESPERANDO (não inclui os que estão sendo atendidos)
   // Separados por profissional para posicionamento no banco
+  // O FANTASMA deve ser o PRÓXIMO HORÁRIO após quem está na CADEIRA (hora atual + 1)
   const agendamentosEsperandoPorProfissional = useMemo(() => {
     const byHourProfissional = movement?.byHourProfissional ?? {};
     const [horaAtualH] = horaAtualFull.split(":").map(Number);
+    const proximaHora = horaAtualH + 1; // Próximo horário após a cadeira
     
     const joao: AgendamentoHora[] = [];
     const jacson: AgendamentoHora[] = [];
+    const joaoFantasma: AgendamentoHora[] = [];
+    const jacsonFantasma: AgendamentoHora[] = [];
     
     for (const [horaKey, agendamentos] of Object.entries(byHourProfissional)) {
       const horaNum = parseInt(horaKey, 10);
       
-      // Só incluir horários futuros (próxima hora em diante)
-      if (horaNum > horaAtualH) {
-        for (const ag of agendamentos) {
-          const profNome = ag.profissional?.trim().toLowerCase() || "";
-          if (profNome.includes("jacson")) {
-            jacson.push(ag);
-          } else if (profNome.includes("joão") || profNome.includes("joao")) {
-            joao.push(ag);
+      for (const ag of agendamentos) {
+        const profNome = ag.profissional?.trim().toLowerCase() || "";
+        const isJacson = profNome.includes("jacson");
+        const isJoao = profNome.includes("joão") || profNome.includes("joao");
+        
+        // Fantasma = próxima hora após a cadeira (horaAtualH + 1)
+        if (horaNum === proximaHora) {
+          if (isJacson) {
+            jacsonFantasma.push(ag);
           } else {
-            // Profissional desconhecido, colocar no lado do João
+            joaoFantasma.push(ag);
+          }
+        }
+        // Banco = horários após o fantasma (horaAtualH + 2 em diante)
+        else if (horaNum > proximaHora) {
+          if (isJacson) {
+            jacson.push(ag);
+          } else {
             joao.push(ag);
           }
         }
@@ -592,18 +606,16 @@ export default function MovimentacaoDia() {
     // Ordenar por horário
     joao.sort((a, b) => a.hora.localeCompare(b.hora));
     jacson.sort((a, b) => a.hora.localeCompare(b.hora));
+    joaoFantasma.sort((a, b) => a.hora.localeCompare(b.hora));
+    jacsonFantasma.sort((a, b) => a.hora.localeCompare(b.hora));
     
-    return { joao, jacson };
+    return { joao, jacson, joaoFantasma, jacsonFantasma };
   }, [movement, horaAtualFull]);
 
   // Clientes para ilustração - BASEADO EM AGENDAMENTOS ESPERANDO
   // Cada lado do banco tem no máximo 2 clientes sentados
   const clientesJoaoSentados = Math.min(agendamentosEsperandoPorProfissional.joao.length, 2);
   const clientesJacsonSentados = Math.min(agendamentosEsperandoPorProfissional.jacson.length, 2);
-  
-  // Clientes fantasmas (próximo horário após os sentados)
-  const clientesJoaoFantasma = agendamentosEsperandoPorProfissional.joao.slice(clientesJoaoSentados, clientesJoaoSentados + 1);
-  const clientesJacsonFantasma = agendamentosEsperandoPorProfissional.jacson.slice(clientesJacsonSentados, clientesJacsonSentados + 1);
 
   const clienteTones = useMemo(
     () => [
@@ -796,7 +808,7 @@ export default function MovimentacaoDia() {
                 ))}
 
                 {/* Cliente fantasma do João - próximo ao barbeiro João (esquerda) */}
-                {clientesJoaoFantasma.map((agendamento, i) => (
+                {agendamentosEsperandoPorProfissional.joaoFantasma.slice(0, 1).map((agendamento, i) => (
                   <div
                     key={`joao-fantasma-${i}-${agendamento.hora}`}
                     className="absolute"
@@ -814,7 +826,7 @@ export default function MovimentacaoDia() {
                 ))}
 
                 {/* Cliente fantasma do Jacson - próximo ao barbeiro Jacson (direita) */}
-                {clientesJacsonFantasma.map((agendamento, i) => (
+                {agendamentosEsperandoPorProfissional.jacsonFantasma.slice(0, 1).map((agendamento, i) => (
                   <div
                     key={`jacson-fantasma-${i}-${agendamento.hora}`}
                     className="absolute"
