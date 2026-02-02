@@ -111,38 +111,43 @@ function BarberChair({ className }: { className?: string }) {
   );
 }
 
-// Cliente sentado na cadeira sendo atendido (com horário acima da cabeça)
-function ClienteNaCadeira({ toneClass, horario, flip }: { toneClass: string; horario?: string; flip?: boolean }) {
+// Cliente sentado na cadeira sendo atendido (com nome do barbeiro e horário acima da cabeça)
+function ClienteNaCadeira({ toneClass, horario, profissional, flip }: { toneClass: string; horario?: string; profissional?: string; flip?: boolean }) {
   return (
     <svg
-      viewBox="0 0 40 60"
-      className={cn("w-10 h-14 drop-shadow-sm", flip && "scale-x-[-1]")}
+      viewBox="0 0 40 70"
+      className={cn("w-10 h-16 drop-shadow-sm", flip && "scale-x-[-1]")}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Balão mostrando horário - sem fundo, texto branco negrito */}
-      {horario && (
+      {/* Nome do barbeiro e horário - sem fundo, texto branco negrito */}
+      {(profissional || horario) && (
         <g transform={flip ? "scale(-1, 1) translate(-40, 0)" : ""}>
-          <text x="20" y="10" textAnchor="middle" fill="white" className="text-[10px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
+          {profissional && (
+            <text x="20" y="8" textAnchor="middle" fill="#f97316" className="text-[9px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{profissional}</text>
+          )}
+          {horario && (
+            <text x="20" y="18" textAnchor="middle" fill="white" className="text-[10px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
+          )}
         </g>
       )}
       
       {/* Cabeça */}
-      <circle cx="20" cy="24" r="6" className={toneClass} />
+      <circle cx="20" cy="32" r="6" className={toneClass} />
       {/* Olhos */}
-      <circle cx="18" cy="23" r="0.8" className="fill-background/80" />
-      <circle cx="22" cy="23" r="0.8" className="fill-background/80" />
+      <circle cx="18" cy="31" r="0.8" className="fill-background/80" />
+      <circle cx="22" cy="31" r="0.8" className="fill-background/80" />
       
       {/* Corpo sentado na cadeira (reclinado) */}
-      <path d="M14 30 L14 44 L26 44 L26 30 Q20 28 14 30" className={toneClass} />
+      <path d="M14 38 L14 52 L26 52 L26 38 Q20 36 14 38" className={toneClass} />
       
       {/* Braços apoiados */}
-      <rect x="10" y="32" width="4" height="8" rx="2" className={toneClass} />
-      <rect x="26" y="32" width="4" height="8" rx="2" className={toneClass} />
+      <rect x="10" y="40" width="4" height="8" rx="2" className={toneClass} />
+      <rect x="26" y="40" width="4" height="8" rx="2" className={toneClass} />
       
       {/* Pernas esticadas */}
-      <rect x="14" y="44" width="5" height="10" rx="2" className={toneClass} />
-      <rect x="21" y="44" width="5" height="10" rx="2" className={toneClass} />
+      <rect x="14" y="52" width="5" height="10" rx="2" className={toneClass} />
+      <rect x="21" y="52" width="5" height="10" rx="2" className={toneClass} />
     </svg>
   );
 }
@@ -190,21 +195,24 @@ function Barber({ color, flip, nome }: { color: string; flip?: boolean; nome?: s
   );
 }
 
-// Cliente sentado (pessoa simplificada) com balão mostrando horário
-function ClienteSentado({ toneClass, showBubble, horario }: { toneClass: string; showBubble?: boolean; horario?: string }) {
+// Cliente sentado (pessoa simplificada) com nome do barbeiro e horário
+function ClienteSentado({ toneClass, showBubble, horario, profissional }: { toneClass: string; showBubble?: boolean; horario?: string; profissional?: string }) {
   return (
     <svg
-      viewBox="0 0 32 48"
-      className="w-8 h-12 drop-shadow-sm"
+      viewBox="0 0 32 56"
+      className="w-8 h-14 drop-shadow-sm"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Horário sem fundo - texto branco negrito com sombra */}
-      {(showBubble || horario) && (
+      {/* Nome do barbeiro e horário - texto sem fundo */}
+      {(showBubble || horario || profissional) && (
         <>
+          {profissional && (
+            <text x="16" y="6" textAnchor="middle" fill="#f97316" className="text-[7px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{profissional}</text>
+          )}
           {horario ? (
-            <text x="16" y="8" textAnchor="middle" fill="white" className="text-[9px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
-          ) : (
+            <text x="16" y="14" textAnchor="middle" fill="white" className="text-[9px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
+          ) : !profissional && (
             <>
               <circle cx="12" cy="6" r="0.8" className="fill-white/60" />
               <circle cx="16" cy="6" r="0.8" className="fill-white/60" />
@@ -214,36 +222,39 @@ function ClienteSentado({ toneClass, showBubble, horario }: { toneClass: string;
         </>
       )}
       {/* Cabeça */}
-      <circle cx="12" cy="18" r="5" className={toneClass} />
+      <circle cx="12" cy="24" r="5" className={toneClass} />
       {/* Olhos */}
-      <circle cx="10" cy="17" r="0.8" className="fill-background/80" />
-      <circle cx="14" cy="17" r="0.8" className="fill-background/80" />
+      <circle cx="10" cy="23" r="0.8" className="fill-background/80" />
+      <circle cx="14" cy="23" r="0.8" className="fill-background/80" />
       
       {/* Corpo sentado */}
-      <path d="M6 24 L6 34 L18 34 L18 24 Q12 22 6 24" className={toneClass} />
+      <path d="M6 30 L6 40 L18 40 L18 30 Q12 28 6 30" className={toneClass} />
       
       {/* Pernas dobradas */}
-      <rect x="6" y="34" width="5" height="8" rx="2" className={toneClass} />
-      <rect x="13" y="34" width="5" height="8" rx="2" className={toneClass} />
+      <rect x="6" y="40" width="5" height="8" rx="2" className={toneClass} />
+      <rect x="13" y="40" width="5" height="8" rx="2" className={toneClass} />
     </svg>
   );
 }
 
-// Cliente em pé / andando com balão mostrando horário
-function ClienteAndando({ toneClass, walking, showBubble, horario }: { toneClass: string; walking?: boolean; showBubble?: boolean; horario?: string }) {
+// Cliente em pé / andando com nome do barbeiro e horário
+function ClienteAndando({ toneClass, walking, showBubble, horario, profissional }: { toneClass: string; walking?: boolean; showBubble?: boolean; horario?: string; profissional?: string }) {
   return (
     <svg
-      viewBox="0 0 32 56"
-      className={cn("w-6 h-14 drop-shadow-sm", walking && "animate-pulse")}
+      viewBox="0 0 32 64"
+      className={cn("w-6 h-16 drop-shadow-sm", walking && "animate-pulse")}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Horário sem fundo - texto branco negrito com sombra */}
-      {(showBubble || horario) && (
+      {/* Nome do barbeiro e horário - texto sem fundo */}
+      {(showBubble || horario || profissional) && (
         <>
+          {profissional && (
+            <text x="17" y="6" textAnchor="middle" fill="#f97316" className="text-[6px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{profissional}</text>
+          )}
           {horario ? (
-            <text x="17" y="8" textAnchor="middle" fill="white" className="text-[9px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
-          ) : (
+            <text x="17" y="14" textAnchor="middle" fill="white" className="text-[9px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
+          ) : !profissional && (
             <>
               <circle cx="13" cy="6" r="0.8" className="fill-white/60" />
               <circle cx="17" cy="6" r="0.8" className="fill-white/60" />
@@ -253,21 +264,21 @@ function ClienteAndando({ toneClass, walking, showBubble, horario }: { toneClass
         </>
       )}
       {/* Cabeça */}
-      <circle cx="12" cy="18" r="5" className={toneClass} />
+      <circle cx="12" cy="24" r="5" className={toneClass} />
       {/* Olhos */}
-      <circle cx="10" cy="17" r="0.7" className="fill-background/80" />
-      <circle cx="14" cy="17" r="0.7" className="fill-background/80" />
+      <circle cx="10" cy="23" r="0.7" className="fill-background/80" />
+      <circle cx="14" cy="23" r="0.7" className="fill-background/80" />
       
       {/* Corpo */}
-      <path d="M7 24 L7 38 L17 38 L17 24 Q12 22 7 24" className={toneClass} />
+      <path d="M7 30 L7 44 L17 44 L17 30 Q12 28 7 30" className={toneClass} />
       
       {/* Braços */}
-      <rect x="3" y="26" width="4" height="10" rx="2" className={toneClass} />
-      <rect x="17" y="26" width="4" height="10" rx="2" className={toneClass} />
+      <rect x="3" y="32" width="4" height="10" rx="2" className={toneClass} />
+      <rect x="17" y="32" width="4" height="10" rx="2" className={toneClass} />
       
       {/* Pernas */}
-      <rect x="8" y="38" width="4" height="12" rx="2" className={toneClass} />
-      <rect x="14" y="38" width="4" height="12" rx="2" className={toneClass} />
+      <rect x="8" y="44" width="4" height="12" rx="2" className={toneClass} />
+      <rect x="14" y="44" width="4" height="12" rx="2" className={toneClass} />
     </svg>
   );
 }
@@ -522,7 +533,7 @@ export default function MovimentacaoDia() {
     };
     
     // Determinar quais cadeiras estão ocupadas
-    const cadeirasOcupadas: { position: "left" | "right"; horario: string; toneClass: string }[] = [];
+    const cadeirasOcupadas: { position: "left" | "right"; horario: string; toneClass: string; profissional: string }[] = [];
     
     for (const agendamento of agendamentosHoraAtual) {
       const profNome = agendamento.profissional?.trim() || "";
@@ -539,6 +550,7 @@ export default function MovimentacaoDia() {
             position: profInfo.position,
             horario: agendamento.hora,
             toneClass: profInfo.toneClass,
+            profissional: profKey,
           });
         }
       }
@@ -683,11 +695,12 @@ export default function MovimentacaoDia() {
                   <BarberChair />
                   {/* Cliente na cadeira se houver agendamento */}
                   {atendimentosAtuais.find(a => a.position === "left") && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2">
                       <div className="crew-bob">
                         <ClienteNaCadeira 
                           toneClass={atendimentosAtuais.find(a => a.position === "left")?.toneClass || "fill-muted-foreground"} 
                           horario={atendimentosAtuais.find(a => a.position === "left")?.horario}
+                          profissional={atendimentosAtuais.find(a => a.position === "left")?.profissional}
                         />
                       </div>
                     </div>
@@ -699,11 +712,12 @@ export default function MovimentacaoDia() {
                   <BarberChair className="scale-x-[-1]" />
                   {/* Cliente na cadeira se houver agendamento */}
                   {atendimentosAtuais.find(a => a.position === "right") && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2">
                       <div className="crew-bob" style={{ animationDelay: "0.3s" }}>
                         <ClienteNaCadeira 
                           toneClass={atendimentosAtuais.find(a => a.position === "right")?.toneClass || "fill-muted-foreground"} 
                           horario={atendimentosAtuais.find(a => a.position === "right")?.horario}
+                          profissional={atendimentosAtuais.find(a => a.position === "right")?.profissional}
                           flip
                         />
                       </div>
@@ -743,6 +757,7 @@ export default function MovimentacaoDia() {
                       <ClienteSentado 
                         toneClass={clienteTones[i % clienteTones.length]} 
                         horario={agendamento.hora}
+                        profissional={agendamento.profissional}
                       />
                     </div>
                   </div>
@@ -775,6 +790,7 @@ export default function MovimentacaoDia() {
                             toneClass={tone} 
                             walking 
                             horario={agendamento.hora}
+                            profissional={agendamento.profissional}
                           />
                         </div>
                       </div>
