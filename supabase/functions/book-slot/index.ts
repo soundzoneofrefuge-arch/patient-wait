@@ -2,6 +2,13 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, generatePassword, getBrazilDateTime } from '../_shared/utils.ts';
+import { validateBookingData, normalizeTime } from '../_shared/validation.ts';
+
+// Limites de segurança para inputs
+const MAX_NAME_LENGTH = 100;
+const MAX_CONTACT_LENGTH = 20;
+const MAX_SERVICE_LENGTH = 100;
+const MAX_PROFESSIONAL_LENGTH = 50;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -20,12 +27,30 @@ serve(async (req) => {
     const body = await req.json();
     const { date, time, name, contact, professional, service } = body ?? {};
 
-    if (!date || !time || !name || !contact || !professional || !service) {
-      return new Response(JSON.stringify({ error: "Campos obrigatórios: data, horário, nome, contato, profissional e serviço" }), {
+    // Validação usando utilitário compartilhado
+    const validation = validateBookingData({ date, time, name, contact, professional, service });
+    if (!validation.valid) {
+      return new Response(JSON.stringify({ error: validation.errors.join(', ') }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
+    // Validação de tamanho para prevenir ataques
+    if (name.length > MAX_NAME_LENGTH || contact.length > MAX_CONTACT_LENGTH || 
+        service.length > MAX_SERVICE_LENGTH || professional.length > MAX_PROFESSIONAL_LENGTH) {
+      return new Response(JSON.stringify({ error: "Dados excedem o tamanho máximo permitido" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Sanitização básica (remover caracteres perigosos)
+    const sanitizedName = name.trim().slice(0, MAX_NAME_LENGTH);
+    const sanitizedContact = contact.replace(/[^\d\s\-\(\)]/g, '').slice(0, MAX_CONTACT_LENGTH);
+    const sanitizedProfessional = professional.trim().slice(0, MAX_PROFESSIONAL_LENGTH);
+    const sanitizedService = service.trim().slice(0, MAX_SERVICE_LENGTH);
+    const normalizedTime = normalizeTime(time);
 
     // Verificar se não é feriado
     const { data: feriado, error: feriadoErr } = await supabase
@@ -46,9 +71,9 @@ serve(async (req) => {
       .from("agendamentos_robustos")
       .select("id, STATUS")
       .eq("DATA", date)
-      .eq("HORA", time)
-      .eq("PROFISSIONAL", professional)
-      .in("STATUS", ["AGENDADO"]);
+      .eq("HORA", normalizedTime)
+      .eq("PROFISSIONAL", sanitizedProfessional)
+      .in("STATUS", ["AGENDADO", "REAGENDADO"]);
 
     if (conflictError) throw conflictError;
 
@@ -68,16 +93,16 @@ serve(async (req) => {
     // Obter data/hora do Brasil usando utility compartilhada
     const brazilTime = getBrazilDateTime();
     
-    // Criar agendamento
+    // Criar agendamento com dados sanitizados
     const { data: booking, error: bookingError } = await supabase
       .from("agendamentos_robustos")
       .insert({
         DATA: date,
-        HORA: time,
-        NOME: name,
-        CONTATO: contact,
-        PROFISSIONAL: professional,
-        servico: service,
+        HORA: normalizedTime,
+        NOME: sanitizedName,
+        CONTATO: sanitizedContact,
+        PROFISSIONAL: sanitizedProfessional,
+        servico: sanitizedService,
         STATUS: "AGENDADO",
         senha: senha,
         created_at: brazilTime.toISOString()
@@ -92,14 +117,14 @@ serve(async (req) => {
 
     console.log('Agendamento criado com sucesso:', booking);
 
-    // Inserir ou atualizar cadastro do cliente
+    // Inserir ou atualizar cadastro do cliente com dados sanitizados
     try {
       const { error: cadastroError } = await supabase
         .from("cadastro")
         .upsert({
-          nome: name,
-          contato: contact,
-          serviços_preferidos: service,
+          nome: sanitizedName,
+          contato: sanitizedContact,
+          serviços_preferidos: sanitizedService,
           data_nascimento: '1990-01-01' // Data padrão, pode ser atualizada depois
         }, {
           onConflict: 'contato'

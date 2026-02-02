@@ -80,7 +80,7 @@ export default function Booking() {
   // Carregar configuração
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.from("info_loja").select("*").limit(1).maybeSingle();
+      const { data, error } = await supabase.from("info_loja_public").select("*").limit(1).maybeSingle();
       if (error) {
         console.error(error);
         toast.error("Não foi possível carregar as configurações.");
@@ -94,7 +94,7 @@ export default function Booking() {
   useEffect(() => {
     const loadProfissionaisEServicos = async () => {
       try {
-        const { data, error } = await supabase.from("info_loja").select("nome_profissionais, escolha_serviços");
+        const { data, error } = await supabase.from("info_loja_public").select("nome_profissionais, escolha_serviços");
         if (error) {
           console.error("Erro ao carregar profissionais e serviços:", error);
           return;

@@ -17,7 +17,7 @@ export default function ContactInfo() {
   useEffect(() => {
     async function loadStoreInfo() {
       const { data, error } = await supabase
-        .from("info_loja")
+        .from("info_loja_public")
         .select("address, url_phone, maps_url, url_insta")
         .limit(1)
         .maybeSingle();
