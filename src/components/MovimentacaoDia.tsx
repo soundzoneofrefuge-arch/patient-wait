@@ -120,12 +120,10 @@ function ClienteNaCadeira({ toneClass, horario, flip }: { toneClass: string; hor
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Balão mostrando horário - sempre invertido para ficar legível */}
+      {/* Balão mostrando horário - sem fundo, texto branco negrito */}
       {horario && (
         <g transform={flip ? "scale(-1, 1) translate(-40, 0)" : ""}>
-          <rect x="4" y="0" width="32" height="14" rx="4" className="fill-primary" />
-          <path d="M18 14 L20 18 L22 14 Z" className="fill-primary" />
-          <text x="20" y="11" textAnchor="middle" fill="white" className="text-[10px] font-bold">{horario}</text>
+          <text x="20" y="10" textAnchor="middle" fill="white" className="text-[10px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
         </g>
       )}
       
@@ -149,37 +147,45 @@ function ClienteNaCadeira({ toneClass, horario, flip }: { toneClass: string; hor
   );
 }
 
-// Barbeiro estilizado (pessoa com avental)
-function Barber({ color, flip }: { color: string; flip?: boolean }) {
+// Barbeiro estilizado (pessoa com avental) com nome acima da cabeça
+function Barber({ color, flip, nome }: { color: string; flip?: boolean; nome?: string }) {
   return (
     <svg
-      viewBox="0 0 32 48"
-      className={cn("w-8 h-10 drop-shadow-sm", flip && "scale-x-[-1]")}
+      viewBox="0 0 50 60"
+      className={cn("w-12 h-14 drop-shadow-sm", flip && "scale-x-[-1]")}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
+      {/* Nome acima da cabeça - fundo laranja, texto branco */}
+      {nome && (
+        <g transform={flip ? "scale(-1, 1) translate(-50, 0)" : ""}>
+          <rect x="5" y="0" width="40" height="12" rx="4" fill="#f97316" />
+          <text x="25" y="9" textAnchor="middle" fill="white" className="text-[8px] font-bold">{nome}</text>
+        </g>
+      )}
+      
       {/* Cabeça */}
-      <circle cx="16" cy="8" r="7" className={color} />
+      <circle cx="25" cy="20" r="7" className={color} />
       {/* Cabelo */}
-      <path d="M10 6 Q16 2 22 6 Q20 4 16 4 Q12 4 10 6" className="fill-foreground/80" />
+      <path d="M19 18 Q25 14 31 18 Q29 16 25 16 Q21 16 19 18" className="fill-foreground/80" />
       {/* Rosto */}
-      <circle cx="13" cy="7" r="1" className="fill-background/80" />
-      <circle cx="19" cy="7" r="1" className="fill-background/80" />
-      <ellipse cx="16" cy="10" rx="2" ry="1" className="fill-background/40" />
+      <circle cx="22" cy="19" r="1" className="fill-background/80" />
+      <circle cx="28" cy="19" r="1" className="fill-background/80" />
+      <ellipse cx="25" cy="22" rx="2" ry="1" className="fill-background/40" />
       
       {/* Corpo com avental */}
-      <path d="M8 16 L8 38 Q8 42 12 42 L20 42 Q24 42 24 38 L24 16 Q20 14 16 14 Q12 14 8 16" className="fill-foreground/90" />
+      <path d="M17 28 L17 50 Q17 54 21 54 L29 54 Q33 54 33 50 L33 28 Q29 26 25 26 Q21 26 17 28" className="fill-foreground/90" />
       {/* Avental */}
-      <path d="M10 20 L10 40 L22 40 L22 20 Q16 18 10 20" className="fill-muted" />
-      <rect x="14" y="22" width="4" height="6" rx="1" className="fill-muted-foreground/40" />
+      <path d="M19 32 L19 52 L31 52 L31 32 Q25 30 19 32" className="fill-muted" />
+      <rect x="23" y="34" width="4" height="6" rx="1" className="fill-muted-foreground/40" />
       
       {/* Braços */}
-      <rect x="4" y="18" width="5" height="14" rx="2" className={color} />
-      <rect x="23" y="18" width="5" height="14" rx="2" className={color} />
+      <rect x="13" y="30" width="5" height="14" rx="2" className={color} />
+      <rect x="32" y="30" width="5" height="14" rx="2" className={color} />
       
       {/* Pernas */}
-      <rect x="10" y="42" width="5" height="6" rx="2" className="fill-secondary" />
-      <rect x="17" y="42" width="5" height="6" rx="2" className="fill-secondary" />
+      <rect x="19" y="54" width="5" height="6" rx="2" className="fill-secondary" />
+      <rect x="26" y="54" width="5" height="6" rx="2" className="fill-secondary" />
     </svg>
   );
 }
@@ -193,13 +199,11 @@ function ClienteSentado({ toneClass, showBubble, horario }: { toneClass: string;
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Balão mostrando horário */}
+      {/* Horário sem fundo - texto branco negrito com sombra */}
       {(showBubble || horario) && (
         <>
-          <rect x="2" y="0" width="28" height="12" rx="3" className="fill-primary" />
-          <path d="M14 12 L16 16 L18 12 Z" className="fill-primary" />
           {horario ? (
-            <text x="16" y="9" textAnchor="middle" fill="white" className="text-[9px] font-bold">{horario}</text>
+            <text x="16" y="8" textAnchor="middle" fill="white" className="text-[9px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
           ) : (
             <>
               <circle cx="12" cy="6" r="0.8" className="fill-white/60" />
@@ -234,13 +238,11 @@ function ClienteAndando({ toneClass, walking, showBubble, horario }: { toneClass
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Balão mostrando horário */}
+      {/* Horário sem fundo - texto branco negrito com sombra */}
       {(showBubble || horario) && (
         <>
-          <rect x="4" y="0" width="26" height="12" rx="3" className="fill-primary" />
-          <path d="M14 12 L16 16 L18 12 Z" className="fill-primary" />
           {horario ? (
-            <text x="17" y="9" textAnchor="middle" fill="white" className="text-[9px] font-bold">{horario}</text>
+            <text x="17" y="8" textAnchor="middle" fill="white" className="text-[9px] font-bold" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}>{horario}</text>
           ) : (
             <>
               <circle cx="13" cy="6" r="0.8" className="fill-white/60" />
@@ -711,16 +713,16 @@ export default function MovimentacaoDia() {
 
                 {/* Barbeiros - só aparecem se houver cliente */}
                 {atendimentosAtuais.find(a => a.position === "left") && (
-                  <div className="absolute top-16 left-[30%]">
+                  <div className="absolute top-12 left-[30%]">
                     <div className="crew-bob">
-                      <Barber color="fill-warning" />
+                      <Barber color="fill-warning" nome="Jacson" />
                     </div>
                   </div>
                 )}
                 {atendimentosAtuais.find(a => a.position === "right") && (
-                  <div className="absolute top-16 right-[30%]">
+                  <div className="absolute top-12 right-[30%]">
                     <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
-                      <Barber color="fill-primary" flip />
+                      <Barber color="fill-primary" flip nome="João" />
                     </div>
                   </div>
                 )}
