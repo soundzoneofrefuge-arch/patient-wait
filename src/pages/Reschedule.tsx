@@ -126,7 +126,7 @@ export default function Reschedule() {
 
   // Buscar agendamentos do usuário quando contato e senha são preenchidos
   useEffect(() => {
-    if (oldContact.length >= 10 && senha.length === 4) {
+    if (oldContact.length >= 8 && senha.length === 4) {
       const searchUserBookings = async () => {
         setLoadingBookings(true);
         try {
