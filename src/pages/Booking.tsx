@@ -117,20 +117,47 @@ export default function Booking() {
     loadProfissionaisEServicos();
   }, []);
 
+  // Obter data/hora atual do Brasil
+  const brazilNow = useMemo(() => {
+    const now = new Date();
+    const brazilDate = now.toLocaleString("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).split('T')[0];
+    
+    const brazilTimeStr = now.toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23"
+    });
+    
+    return { date: brazilDate, time: brazilTimeStr };
+  }, []);
+
+  // Verificar se o horário de funcionamento já passou para a data de hoje
+  const isClosingTimePassed = useMemo(() => {
+    if (!config?.closing_time) return false;
+    
+    // Comparar hora atual com closing_time
+    const [currentHour, currentMin] = brazilNow.time.split(':').map(Number);
+    const closingTime = config.closing_time.slice(0, 5); // HH:MM
+    const [closingHour, closingMin] = closingTime.split(':').map(Number);
+    
+    const currentMinutes = currentHour * 60 + currentMin;
+    const closingMinutes = closingHour * 60 + closingMin;
+    
+    return currentMinutes >= closingMinutes;
+  }, [config?.closing_time, brazilNow.time]);
+
   // Gerar próximas 6 datas a partir do dia atual (Brasil timezone) - excluindo domingos
   const nextSixDates = useMemo(() => {
     const arr: string[] = [];
     
-    // Obter data atual do Brasil usando toLocaleString
-    const brazilTime = new Date().toLocaleString("en-CA", {
-      timeZone: "America/Sao_Paulo",
-      year: "numeric",
-      month: "2-digit", 
-      day: "2-digit"
-    }).split('T')[0]; // Formato YYYY-MM-DD
-    
-    // Converter para objeto Date baseado na data local do Brasil
-    const [year, month, day] = brazilTime.split('-').map(Number);
+    // Usar data do Brasil já calculada
+    const [year, month, day] = brazilNow.date.split('-').map(Number);
     const today = new Date(year, month - 1, day); // month é 0-indexed
     
     let i = 0;
@@ -148,10 +175,10 @@ export default function Booking() {
       i++;
     }
     
-    console.log('Data Brasil hoje:', brazilTime);
+    console.log('Data Brasil hoje:', brazilNow.date);
     console.log('Datas geradas (sem domingos):', arr);
     return arr;
-  }, []);
+  }, [brazilNow.date]);
 
   // OTIMIZAÇÃO: Buscar slots APENAS para uma data específica
   const fetchSlotsForDate = useCallback(async (dStr: string) => {
@@ -439,29 +466,40 @@ export default function Booking() {
               {nextSixDates.map(d => {
                 const dateObj = new Date(d + 'T12:00:00');
                 const isSelected = selectedDateCard === d;
+                const isToday = d === brazilNow.date;
+                const isTodayAndClosed = isToday && isClosingTimePassed;
                 
                 return (
                   <Card
                     key={d}
                     className={cn(
-                      "cursor-pointer transition-all hover:border-primary/50",
-                      isSelected && "ring-2 ring-primary border-primary bg-primary/10"
+                      "cursor-pointer transition-all hover:border-primary/50 relative overflow-hidden",
+                      isSelected && "ring-2 ring-primary border-primary bg-primary/10",
+                      isTodayAndClosed && "opacity-60"
                     )}
-                    onClick={() => handleDateCardClick(d)}
+                    onClick={() => !isTodayAndClosed && handleDateCardClick(d)}
                   >
-                    <CardContent className="p-3 text-center">
+                    {/* Tarja vermelha esmaecida quando horário passou */}
+                    {isTodayAndClosed && (
+                      <div className="absolute inset-0 bg-destructive/30 z-10 pointer-events-none" />
+                    )}
+                    <CardContent className="p-3 text-center relative z-0">
                       <p className="text-xs text-muted-foreground capitalize">
                         {format(dateObj, "EEE", { locale: ptBR })}
                       </p>
                       <p className={cn(
                         "text-lg font-bold",
-                        isSelected && "text-primary"
+                        isSelected && "text-primary",
+                        isTodayAndClosed && "text-muted-foreground"
                       )}>
                         {format(dateObj, "dd", { locale: ptBR })}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {format(dateObj, "MMM", { locale: ptBR })}
                       </p>
+                      {isTodayAndClosed && (
+                        <p className="text-[10px] text-destructive font-medium mt-1">Encerrado</p>
+                      )}
                     </CardContent>
                   </Card>
                 );
