@@ -55,7 +55,7 @@ export default function Cancel() {
 
   // Buscar agendamentos do usuário quando contato e senha são preenchidos
   useEffect(() => {
-    if (contact.length >= 10 && senha.length === 4) {
+    if (contact.length >= 8 && senha.length === 4) {
       const searchUserBookings = async () => {
         setLoadingBookings(true);
         try {
