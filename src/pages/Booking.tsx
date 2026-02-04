@@ -632,7 +632,12 @@ export default function Booking() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="contact" className="mx-[12px] my-[12px] py-[12px] px-[12px]">Contato</Label>
-              <Input id="contact" value={contact} onChange={e => setContact(e.target.value)} />
+              <Input 
+                id="contact" 
+                value={contact} 
+                onChange={e => setContact(e.target.value)} 
+                placeholder="Mínimo 8 dígitos"
+              />
             </div>
             <div className="md:col-span-2">
               <Button
