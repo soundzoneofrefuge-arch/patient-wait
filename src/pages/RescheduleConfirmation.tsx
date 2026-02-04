@@ -6,39 +6,35 @@ import { CheckCircle2, Calendar, Clock, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import authBackground from "@/assets/auth-background.jpg";
-
 export default function RescheduleConfirmation() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state;
-
   useEffect(() => {
     document.title = "Reagendamento Confirmado | ÁSPERUS";
   }, []);
-
   if (!state) {
     navigate("/");
     return null;
   }
-
-  const { oldDate, oldTime, newDate, newTime, contact, professional, service, senha } = state;
-
-  return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat relative"
-      style={{
-        backgroundImage: `url(${authBackground})`,
-      }}
-    >
+  const {
+    oldDate,
+    oldTime,
+    newDate,
+    newTime,
+    contact,
+    professional,
+    service,
+    senha
+  } = state;
+  return <div className="min-h-screen bg-cover bg-center bg-no-repeat relative" style={{
+    backgroundImage: `url(${authBackground})`
+  }}>
       <div className="absolute inset-0 bg-black/50"></div>
       
       <main className="container mx-auto px-6 py-8 relative z-10">
         <header className="mb-8 text-center relative">
-          <Button 
-            variant="outline" 
-            className="absolute top-0 left-0 flex items-center gap-2"
-            onClick={() => navigate("/")}
-          >
+          <Button variant="outline" className="absolute top-0 left-0 flex items-center gap-2" onClick={() => navigate("/")}>
             <ArrowLeft className="h-4 w-4" />
             Início
           </Button>
@@ -67,7 +63,9 @@ export default function RescheduleConfirmation() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="line-through text-muted-foreground">
-                      {format(new Date(oldDate), "PPP", { locale: ptBR })}
+                      {format(new Date(oldDate), "PPP", {
+                      locale: ptBR
+                    })}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -89,7 +87,9 @@ export default function RescheduleConfirmation() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-white" />
                     <span className="font-medium text-white">
-                      {format(new Date(newDate), "PPP", { locale: ptBR })}
+                      {format(new Date(newDate), "PPP", {
+                      locale: ptBR
+                    })}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -98,21 +98,17 @@ export default function RescheduleConfirmation() {
                       {newTime}
                     </span>
                   </div>
-                  {professional && (
-                    <div className="flex items-center gap-2">
+                  {professional && <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-white" />
                       <span className="text-white">
                         Profissional: {professional}
                       </span>
-                    </div>
-                  )}
-                  {service && (
-                    <div className="flex items-center gap-2">
+                    </div>}
+                  {service && <div className="flex items-center gap-2">
                       <span className="text-white">
                         Serviço: {service}
                       </span>
-                    </div>
-                  )}
+                    </div>}
                   <div className="flex items-center gap-2">
                     <span className="text-white">
                       Contato: {contact}
@@ -120,13 +116,11 @@ export default function RescheduleConfirmation() {
                   </div>
                 </div>
                 
-                {senha && (
-                  <div className="text-lg font-mono text-white mt-4 p-4 bg-warning/20 rounded border-2 border-warning text-center">
+                {senha && <div className="text-lg font-mono text-white mt-4 p-4 bg-warning/20 rounded border-2 border-warning text-center">
                     <div className="text-sm mb-2">ATENÇÃO!!!</div>
-                    <div className="text-base mb-2">Guarde esta SENHA para reagendar ou cancelar:</div>
+                    <div className="text-base mb-2 my-0">Guarde esta SENHA para consultar,reagendar ou cancelar:</div>
                     <div className="text-3xl font-bold tracking-wider">{senha}</div>
-                  </div>
-                )}
+                  </div>}
               </div>
 
               <div className="text-center space-y-4">
@@ -135,17 +129,10 @@ export default function RescheduleConfirmation() {
                 </p>
                 
                 <div className="flex gap-3 justify-center">
-                  <Button
-                    onClick={() => navigate("/")}
-                    className="bg-warning hover:bg-warning/90 text-warning-foreground"
-                  >
+                  <Button onClick={() => navigate("/")} className="bg-warning hover:bg-warning/90 text-warning-foreground">
                     Fazer Novo Agendamento
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate("/reagendar")}
-                    className="border-warning/40 text-warning hover:bg-warning/10"
-                  >
+                  <Button variant="outline" onClick={() => navigate("/reagendar")} className="border-warning/40 text-warning hover:bg-warning/10">
                     Reagendar Novamente
                   </Button>
                 </div>
@@ -154,6 +141,5 @@ export default function RescheduleConfirmation() {
           </Card>
         </div>
       </main>
-    </div>
-  );
+    </div>;
 }
