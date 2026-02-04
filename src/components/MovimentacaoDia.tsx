@@ -750,23 +750,19 @@ export default function MovimentacaoDia() {
                   )}
                 </div>
 
-                {/* Barbeiros - só aparecem se houver cliente */}
-                {/* Esquerda = João */}
-                {atendimentosAtuais.find(a => a.position === "left") && (
-                  <div className="absolute top-12 left-[30%]">
-                    <div className="crew-bob">
-                      <Barber color="fill-primary" nome="João" />
-                    </div>
+                {/* Barbeiros - SEMPRE visíveis ao lado das cadeiras */}
+                {/* Esquerda = João (azul) */}
+                <div className="absolute top-12 left-[30%]">
+                  <div className="crew-bob">
+                    <Barber color="fill-sky-500" nome="João" />
                   </div>
-                )}
-                {/* Direita = Jacson */}
-                {atendimentosAtuais.find(a => a.position === "right") && (
-                  <div className="absolute top-12 right-[30%]">
-                    <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
-                      <Barber color="fill-warning" flip nome="Jacson" />
-                    </div>
+                </div>
+                {/* Direita = Jacson (laranja) */}
+                <div className="absolute top-12 right-[30%]">
+                  <div className="crew-bob" style={{ animationDelay: "0.5s" }}>
+                    <Barber color="fill-warning" flip nome="Jacson" />
                   </div>
-                )}
+                </div>
 
                 {/* Banco de espera */}
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[80%]">
