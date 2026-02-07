@@ -27,7 +27,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Buscando agendamentos para contato:', contact);
+    console.log('Buscando agendamentos para contato');
 
     // Obter data/hora atual do Brasil usando utility compartilhada
     const brazilTime = getBrazilDateTime();
@@ -56,7 +56,7 @@ serve(async (req) => {
       const isValidPassword = senha === booking.senha;
       
       if (!isValidPassword) {
-        console.log('Senha inválida para agendamento:', booking.id);
+        console.log('Senha inválida detectada');
         return false;
       }
       

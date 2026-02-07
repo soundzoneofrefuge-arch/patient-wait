@@ -62,7 +62,7 @@ serve(async (req) => {
     const sanitizedProfessional = professional ? professional.trim().slice(0, MAX_PROFESSIONAL_LENGTH) : undefined;
     const sanitizedService = service ? service.trim().slice(0, MAX_SERVICE_LENGTH) : undefined;
 
-    console.log('Procurando agendamento:', { oldName: sanitizedOldName, oldContact: sanitizedOldContact, oldDate, oldTime: normalizedOldTime });
+    console.log('Procurando agendamento:', { oldDate, oldTime: normalizedOldTime });
 
     // Buscar o agendamento existente com dados sanitizados
     const { data: existingBooking, error: findError } = await supabase
@@ -88,7 +88,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Agendamento encontrado:', existingBooking);
+    console.log('Agendamento encontrado:', existingBooking?.id);
 
     // Verificar se não é feriado
     const { data: feriado, error: feriadoErr } = await supabase
@@ -153,7 +153,7 @@ serve(async (req) => {
       throw updateError;
     }
 
-    console.log('Agendamento reagendado com sucesso:', updatedBooking);
+    console.log('Agendamento reagendado com sucesso:', updatedBooking?.id);
 
     return new Response(JSON.stringify({ booking: updatedBooking }), {
       status: 200,

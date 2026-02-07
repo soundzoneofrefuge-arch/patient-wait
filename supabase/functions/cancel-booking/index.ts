@@ -31,7 +31,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Procurando agendamento para cancelar:', { name, contact, date, time, senha });
+    console.log('Procurando agendamento para cancelar:', { date, time });
 
     // Buscar o agendamento existente
     const { data: existingBooking, error: findError } = await supabase
@@ -70,7 +70,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Agendamento encontrado para cancelar:', existingBooking);
+    console.log('Agendamento encontrado para cancelar:', existingBooking?.id);
 
     // Marcar como cancelado ao invés de deletar
     const { error: updateError } = await supabase
