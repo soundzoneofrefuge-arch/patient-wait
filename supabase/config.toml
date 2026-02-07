@@ -1,11 +1,5 @@
 project_id = "fcmakvaoosrjksvxzpom"
 
-# Supabase Project Configuration
-# ⚠️ NÃO coloque credenciais reais aqui!
-# Use GitHub Secrets para deploy automático
-# Use .env local para desenvolvimento
-
-# Edge Functions Configuration
 [functions.book-slot]
 verify_jwt = false
 
@@ -28,4 +22,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.get-available-slots]
+verify_jwt = false
+
+[functions.get-day-movement]
+verify_jwt = false
+
+[functions.db-cleanup]
 verify_jwt = false
