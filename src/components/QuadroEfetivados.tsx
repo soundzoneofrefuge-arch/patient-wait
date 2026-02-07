@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAgendamentosEfetivados } from "@/hooks/useAgendamentosEfetivados";
+import { useAgendamentosRealtimeUnificado } from "@/hooks/useAgendamentosRealtimeUnificado";
 import { CheckCircle, Calendar } from "lucide-react";
 
 export const QuadroEfetivados = () => {
-  const { data, isLoading, error } = useAgendamentosEfetivados();
-
+  const { efetivados, isLoading, error } = useAgendamentosRealtimeUnificado();
   if (error) {
     return (
       <Card className="w-full">
@@ -36,11 +35,11 @@ export const QuadroEfetivados = () => {
           {isLoading ? (
             <div className="animate-pulse">...</div>
           ) : (
-            data?.efetivados || 0
+            efetivados || 0
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          agendamento{(data?.efetivados || 0) !== 1 ? 's' : ''} que já passou{(data?.efetivados || 0) !== 1 ? 'ram' : 'u'} do horário hoje
+          agendamento{(efetivados || 0) !== 1 ? 's' : ''} que já passou{(efetivados || 0) !== 1 ? 'ram' : 'u'} do horário hoje
         </p>
       </CardContent>
     </Card>

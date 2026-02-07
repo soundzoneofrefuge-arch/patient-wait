@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAgendamentosRealtime } from "@/hooks/useAgendamentosRealtime";
+import { useAgendamentosRealtimeUnificado } from "@/hooks/useAgendamentosRealtimeUnificado";
 import { Calendar, Clock, User, Briefcase, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +35,7 @@ export const PainelAgendamentos = () => {
     agendamentos,
     isLoading,
     error
-  } = useAgendamentosRealtime();
+  } = useAgendamentosRealtimeUnificado();
 
   const [isSubmitting, setIsSubmitting] = useState<Set<string>>(new Set());
   const [finalizados, setFinalizados] = useState<Set<string>>(new Set());
