@@ -115,7 +115,7 @@ serve(async (req) => {
       throw bookingError;
     }
 
-    console.log('Agendamento criado com sucesso:', booking);
+    console.log('Agendamento criado com sucesso:', booking?.id);
 
     // Inserir ou atualizar cadastro do cliente com dados sanitizados
     try {
@@ -134,7 +134,7 @@ serve(async (req) => {
         console.error('Erro ao atualizar cadastro:', cadastroError);
         // Não bloquear o agendamento por erro no cadastro
       } else {
-        console.log('Cadastro atualizado para:', contact);
+        console.log('Cadastro atualizado com sucesso');
       }
     } catch (cadastroErr) {
       console.error('Erro ao processar cadastro:', cadastroErr);

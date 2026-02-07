@@ -46,7 +46,7 @@ serve(async (req) => {
     }
 
     if (!lojaInfo || lojaInfo.auth_user !== email) {
-      console.log('Email não autorizado:', email);
+      console.log('Tentativa de autenticação não autorizada');
       return new Response(JSON.stringify({ 
         error: "Credenciais inválidas",
         authenticated: false 
@@ -73,7 +73,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Admin autenticado com sucesso:', email);
+    console.log('Admin autenticado com sucesso');
 
     return new Response(JSON.stringify({ 
       authenticated: true,
