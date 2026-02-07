@@ -1,317 +1,145 @@
 
-# Plano Ultra Otimizado: Sistema de Horários com ~7 Queries por Sessão
 
-## Resumo Executivo
+# Plano: Edge Function de Limpeza Automática do Banco de Dados
 
-Otimização do sistema de agendamento para reduzir o consumo de requisições do Supabase de **~100+ queries/sessão** para **~7-10 queries/sessão**, permitindo suportar facilmente **50-100 usuários/mês** (e até ~71.000 no limite teórico).
-
----
-
-## Análise do Sistema Atual
-
-### Fluxo Atual (Ineficiente)
-```text
-Usuário entra no site
-       |
-       v
-+---------------------------+
-| fetchAllSlots() dispara   |
-| 6 chamadas paralelas      |
-| (1 por data)              |
-+---------------------------+
-       |
-       v
-+---------------------------+
-| Cada chamada executa:     |
-| - horarios_especiais      |
-| - feriados                |
-| - info_loja (REMOVER)     |
-| - agendamentos_robustos   |
-+---------------------------+
-       |
-       v
-= 24 queries apenas na entrada
-```
-
-### Problemas Identificados
-1. **Linha 197-244 (Booking.tsx)**: `fetchAllSlots()` busca 6 datas simultaneamente
-2. **Linha 284-301 (Booking.tsx)**: Realtime dispara `fetchAllSlots()` novamente (mais 24 queries)
-3. **Linha 263-281 (Booking.tsx)**: `fetchSlotsForProfessional()` busca para TODOS os profissionais
-4. **Edge Function**: Query `info_loja` é redundante (já carregada no frontend)
+## Objetivo
+Criar uma edge function que monitora o tamanho do banco de dados e limpa automaticamente dados antigos quando o uso se aproxima do limite de 500MB do plano gratuito do Supabase.
 
 ---
 
-## Novo Fluxo Proposto
+## Estratégia de Limpeza
+
+A função irá limpar dados **por antiguidade e status**, seguindo esta ordem de prioridade:
+
+1. **Agendamentos CANCELADOS** com mais de 30 dias
+2. **Agendamentos finalizados (NÃO EFETIVADO)** com mais de 60 dias  
+3. **Agendamentos finalizados (EFETIVADO)** com mais de 90 dias
+4. **Cadastros de clientes** sem agendamentos associados (opcional)
+
+---
+
+## Arquitetura
 
 ```text
-Usuário entra no site
-       |
-       v
-+---------------------------+
-| Mostrar 6 datas como      |
-| CARDS CLICÁVEIS           |
-| (0 queries de slots)      |
-+---------------------------+
-       |
-       v
-Usuário clica em uma data
-       |
-       v
-+---------------------------+
-| fetchSlotsFor(data)       |
-| APENAS 1 chamada          |
-| = 3 queries no banco      |
-+---------------------------+
-       |
-       v
-+---------------------------+
-| Realtime monitora APENAS  |
-| a data selecionada        |
-| (debounce de 1.5s)        |
-+---------------------------+
-       |
-       v
-Usuário clica em AGENDAR
-       |
-       v
-+---------------------------+
-| book-slot verifica        |
-| conflito antes de inserir |
-| = 3 queries               |
-+---------------------------+
+┌─────────────────────────────────────────────────────────────┐
+│                    Cron Job (Supabase)                      │
+│              Executa semanalmente (domingo 3h)              │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│               Edge Function: db-cleanup                     │
+│                                                             │
+│  1. Verifica tamanho atual do banco                         │
+│  2. Se > 400MB (80%), inicia limpeza                        │
+│  3. Remove dados antigos por prioridade                     │
+│  4. Registra log da operação                                │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Mudanças Detalhadas
+## Implementação Técnica
 
-### 1. Edge Function `get-available-slots` (3 queries)
+### 1. Nova Edge Function: `db-cleanup`
 
-**Remover**: Query de `info_loja` (horários de funcionamento)
+**Arquivo:** `supabase/functions/db-cleanup/index.ts`
 
-**Manter**:
-- `horarios_especiais` (verificar fechamento/horário especial)
-- `feriados` (verificar feriado)
-- `agendamentos_robustos` (slots ocupados)
-
-**Nova lógica**:
-- Receber `opening_time`, `closing_time`, `slot_interval_minutes` como parâmetros opcionais do frontend
-- Se horário especial existir, sobrescrever os parâmetros recebidos
-
-### 2. Booking.tsx - Interface de Datas
-
-**Substituir calendário popup por 6 cards clicáveis**:
-- Cada card mostra: dia da semana, data formatada
-- Ao clicar: busca slots APENAS daquela data
-- Visual: card selecionado fica destacado (ring + cor)
-
-**Novo estado**:
 ```typescript
-const [selectedDateCard, setSelectedDateCard] = useState<string | null>(null);
-const [slotsForSelectedDate, setSlotsForSelectedDate] = useState<string[]>([]);
-const [specialInfo, setSpecialInfo] = useState<SpecialInfo | null>(null);
+// Pseudocódigo da função
+- Verificar tamanho do banco via query SQL
+- Se tamanho > 400MB (threshold de 80%):
+  - Deletar agendamentos CANCELADOS > 30 dias
+  - Deletar finalizados NÃO EFETIVADO > 60 dias
+  - Deletar finalizados EFETIVADO > 90 dias
+- Retornar relatório de limpeza
 ```
 
-### 3. Booking.tsx - Realtime Otimizado com Debounce
+### 2. Atualizar `config.toml`
 
-**Lógica de debounce**:
-```typescript
-// Quando Realtime detecta mudança:
-// 1. Cancelar timer anterior (se existir)
-// 2. Iniciar novo timer de 1.5 segundos
-// 3. Após 1.5s, atualizar APENAS a data selecionada
+Adicionar configuração da nova função:
+```toml
+[functions.db-cleanup]
+verify_jwt = false
 ```
 
-**Por que 1.5 segundos?**
-- Rápido o suficiente para o usuário ver a atualização
-- Agrupa múltiplos eventos (ex: 3 pessoas agendando em sequência)
-- Evita requisições desnecessárias durante picos
+### 3. Configurar Cron Job (Manual no Supabase)
 
-### 4. Mensagens de Erro e Validação
-
-**No clique de horário**:
-- Se horário já foi ocupado (Realtime atualizou), mostrar toast de erro
-- Limpar seleção e forçar nova escolha
-
-**No clique de AGENDAR**:
-- Edge function `book-slot` já valida conflito (linha 44-63)
-- Se conflito detectado (409), mostrar mensagem clara:
-  - "Este horário foi reservado por outra pessoa. Atualizando horários..."
-  - Recarregar slots automaticamente
-  - Limpar seleção de horário
-
-**Cenários de erro tratados**:
-1. Horário ocupado durante seleção
-2. Conflito no momento de confirmar
-3. Loja fechada / Feriado
-4. Data inválida (passada)
-
-### 5. Reschedule.tsx - Mesmas Otimizações
-
-Aplicar exatamente a mesma lógica:
-- Cards clicáveis ao invés de buscar 6 datas
-- Realtime apenas na data selecionada
-- Debounce de 1.5s
-- Mensagens de erro claras
+Executar semanalmente via Dashboard do Supabase:
+- **Schedule:** `0 3 * * 0` (domingo às 3h da manhã)
+- **Edge Function:** `db-cleanup`
 
 ---
 
-## Contagem Final de Queries
+## Parâmetros Configuráveis
 
-| Ação | Queries |
-|------|---------|
-| Entrar no site | 0 (slots) + 1 (info_loja config) = **1** |
-| Selecionar data | **3** |
-| Realtime (por evento) | **3** (com debounce, raramente dispara) |
-| Clicar AGENDAR | **3** (book-slot) |
-| **TOTAL por sessão** | **~7-10** |
-
----
-
-## Capacidade do Plano Free
-
-| Métrica | Valor |
-|---------|-------|
-| Limite mensal Supabase | 500.000 requests |
-| Queries por sessão | ~10 |
-| Usuários suportados | ~50.000/mês |
-| Sua meta (50-100) | **Muito abaixo do limite** |
+| Parâmetro | Valor Padrão | Descrição |
+|-----------|--------------|-----------|
+| `THRESHOLD_MB` | 400 | Tamanho em MB para iniciar limpeza |
+| `DAYS_CANCELED` | 30 | Dias para manter agendamentos cancelados |
+| `DAYS_NAO_EFETIVADO` | 60 | Dias para manter não efetivados |
+| `DAYS_EFETIVADO` | 90 | Dias para manter efetivados |
 
 ---
 
-## Arquivos a Modificar
+## Segurança
 
-1. `supabase/functions/get-available-slots/index.ts`
-   - Remover query de `info_loja`
-   - Aceitar parâmetros de horário opcionais
-
-2. `src/pages/Booking.tsx`
-   - Substituir calendário por cards de data
-   - Implementar busca sob demanda
-   - Adicionar debounce no Realtime
-   - Melhorar mensagens de erro
-
-3. `src/pages/Reschedule.tsx`
-   - Aplicar mesmas mudanças do Booking.tsx
+- A função usa `SERVICE_ROLE_KEY` para acesso administrativo
+- Sem autenticação JWT (será chamada apenas por cron interno)
+- Logs detalhados para auditoria
 
 ---
 
 ## Seção Técnica
 
-### Implementação do Debounce (Realtime)
-
-```typescript
-// Referência para o timer
-const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-// No useEffect do Realtime
-useEffect(() => {
-  if (!config || !selectedDateCard) return;
-  
-  const channel = supabase
-    .channel("booking-slots")
-    .on("postgres_changes", {
-      event: "*",
-      schema: "public",
-      table: "agendamentos_robustos"
-    }, (payload) => {
-      // Verificar se a mudança afeta a data selecionada
-      if (payload.new?.DATA === selectedDateCard || 
-          payload.old?.DATA === selectedDateCard) {
-        
-        // Cancelar timer anterior
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-        
-        // Novo timer de 1.5s
-        debounceTimerRef.current = setTimeout(() => {
-          fetchSlotsFor(selectedDateCard);
-        }, 1500);
-      }
-    })
-    .subscribe();
-
-  return () => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    supabase.removeChannel(channel);
-  };
-}, [config, selectedDateCard, professional]);
+### Query de Verificação de Tamanho
+```sql
+SELECT pg_database_size(current_database()) as size_bytes;
 ```
 
-### Estrutura dos Cards de Data
-
-```typescript
-<div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-  {nextSixDates.map(d => {
-    const dateObj = new Date(d + 'T12:00:00');
-    const isSelected = selectedDateCard === d;
-    
-    return (
-      <Card
-        key={d}
-        className={cn(
-          "cursor-pointer transition-all hover:border-primary/50",
-          isSelected && "ring-2 ring-primary border-primary"
-        )}
-        onClick={() => handleDateCardClick(d)}
-      >
-        <CardContent className="p-3 text-center">
-          <p className="text-xs text-muted-foreground">
-            {format(dateObj, "EEE", { locale: ptBR })}
-          </p>
-          <p className="text-lg font-bold">
-            {format(dateObj, "dd", { locale: ptBR })}
-          </p>
-          <p className="text-xs">
-            {format(dateObj, "MMM", { locale: ptBR })}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  })}
-</div>
+### Query de Limpeza (exemplo)
+```sql
+DELETE FROM agendamentos_robustos 
+WHERE "STATUS" = 'CANCELADO' 
+AND "DATA" < CURRENT_DATE - INTERVAL '30 days';
 ```
 
-### Tratamento de Conflito no Agendamento
-
-```typescript
-async function handleBook() {
-  // ... validações existentes ...
-  
-  try {
-    const { data, error } = await supabase.functions.invoke("book-slot", {
-      body: { date, time, name, contact, professional, service }
-    });
-    
-    if (error) throw error;
-    
-    // Sucesso - redirecionar
-    navigate("/booking-confirmation", { state: {...} });
-    
-  } catch (e: any) {
-    // Conflito de horário (409)
-    if (e?.message?.includes("já possui agendamento") || 
-        e?.context?.status === 409) {
-      toast.error(
-        "Este horário foi reservado por outra pessoa. Atualizando horários disponíveis...",
-        { duration: 5000 }
-      );
-      
-      // Limpar seleção
-      setSelectedSlot(null);
-      
-      // Recarregar slots da data selecionada
-      if (selectedDateCard) {
-        await fetchSlotsFor(selectedDateCard);
-      }
-      return;
-    }
-    
-    // Outros erros
-    toast.error(e?.message || "Erro ao confirmar agendamento.");
-  }
+### Resposta da Função
+```json
+{
+  "success": true,
+  "database_size_mb": 14.05,
+  "threshold_mb": 400,
+  "cleanup_performed": false,
+  "message": "Banco dentro do limite seguro"
 }
 ```
+
+---
+
+## Arquivos a Criar/Modificar
+
+| Arquivo | Ação |
+|---------|------|
+| `supabase/functions/db-cleanup/index.ts` | Criar nova edge function |
+| `supabase/config.toml` | Adicionar configuração da função |
+
+---
+
+## Estado Atual do Banco
+
+- **Tamanho atual:** 14 MB (2.8% do limite)
+- **Tabela maior:** `agendamentos_robustos` (80 KB, 32 registros)
+- **Status:** Muito longe do limite, mas a função previne problemas futuros
+
+---
+
+## Configuração do Cron Job (Pós-Deploy)
+
+Após o deploy, você precisará configurar manualmente o cron job no Dashboard do Supabase:
+
+1. Ir em **Database > Cron Jobs**
+2. Criar novo job com schedule `0 3 * * 0`
+3. Tipo: **Supabase Edge Function**
+4. Selecionar: `db-cleanup`
+
